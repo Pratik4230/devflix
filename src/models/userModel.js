@@ -2,12 +2,11 @@ const mongoose = require("mongoose");
 
 
 const userSchema = new mongoose.Schema({
-   userName: {
+   channelName: {
     type:String,
     required: true,
     unique: true,
     trim: true,
-    lowercase: true,
    },
 
    emailId: {
@@ -23,7 +22,7 @@ const userSchema = new mongoose.Schema({
     required: true,
    },
 
-   fullName: {
+   userName: {
     type:String,
     required:true,
     trim:true,
@@ -38,7 +37,7 @@ const userSchema = new mongoose.Schema({
 
    watchHistory:[
     {
-        type: Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
          ref: "Video"
     }
    ],
@@ -48,7 +47,8 @@ const userSchema = new mongoose.Schema({
 },
 },
  {timestamps:true}
-)
+);
+
 
  const User = mongoose.model("User" , userSchema);
 
