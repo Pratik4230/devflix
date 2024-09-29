@@ -2,6 +2,7 @@ const express = require("express");
 const {ValidateSignUpData, ValidateLogInData} = require("../utils/validations");
 const bcrypt = require("bcrypt");
 const {User} = require("../models/userModel");
+const { authUser } = require("../middlewares/authCheck");
 
 
 
@@ -124,5 +125,31 @@ authRouter.post("/login" , async (req, res) => {
         
     }
 })
+
+authRouter.post("/logout" , authUser , async (req, res) => {
+   
+    await User.findByIdAndUpdate(
+
+        req.user._id,
+        {
+            $unset:{               //This is a MongoDB operator used to remove a field from a document.
+                refreshToken: 1    //refreshToken: 1: This specifies that the refreshToken field should be removed from the user’s document in the database. 1 here is a flag indicating the field should be deleted.
+            }
+        },
+        {
+            new: true              //This tells Mongoose to return the updated document after applying the changes (i.e., removing the refreshToken).
+        }
+    )
+
+    return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json("User logged Out")
+
+   
+})
+
+
 
 module.exports={authRouter};
