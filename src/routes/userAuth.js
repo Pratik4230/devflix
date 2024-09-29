@@ -3,6 +3,7 @@ const {ValidateSignUpData, ValidateLogInData} = require("../utils/validations");
 const bcrypt = require("bcrypt");
 const {User} = require("../models/userModel");
 const { authUser } = require("../middlewares/authCheck");
+const jwt = require("jsonwebtoken");
 
 
 
@@ -150,6 +151,46 @@ authRouter.post("/logout" , authUser , async (req, res) => {
    
 })
 
+authRouter.post("/renewAccess" , async (req, res) => {
+
+    try { 
+       
+       const clientsRefreshToken = req.cookies?.refreshToken;
+            if (!clientsRefreshToken) {
+                return res.send("No tokens")
+               }
+        //   console.log(clientsRefreshToken);
+        
+
+      const decodedData = jwt.verify(clientsRefreshToken , process.env.REFRESH_TOKEN_SECRET);
+             if (!decodedData) {
+                 return res.send("Invalid Token");
+                }
+        //  console.log(decodedData);
+
+
+       const user = await User.findById(decodedData._id);
+         if (!user) {
+             return res.send("Invalid Token");
+            }
+         
+       if (clientsRefreshToken !== user?.refreshToken) {
+           return res.send("Invalid Token");
+       }
+     
+
+      const {accessToken , refreshToken} = await createAccessTokenAndRefreshToken(user._id);
+      
+       return res
+       .status(200)
+       .cookie("accessToken", accessToken , options)
+       .cookie("refreshToken", refreshToken , options)      
+       .send("access token renewed")
+    } catch (error) {
+        console.log("ERROR in renewToken: " , error);
+        
+    }
+})
 
 
 module.exports={authRouter};
