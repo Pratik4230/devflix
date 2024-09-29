@@ -1,3 +1,4 @@
+
 const validator = require("validator");
 
 const ValidateSignUpData = (req) => {    
@@ -15,4 +16,17 @@ const ValidateSignUpData = (req) => {
    return true;
    }
 
-   module.exports={ValidateSignUpData}
+const ValidateLogInData = (req) => {    
+  
+    const { password, emailId } = req.body;
+
+   if (!password  || !emailId ) {
+       throw new Error("All fields are required");
+   }else if(!validator.isEmail(emailId) ){
+    throw new Error("Enter valid email")
+   }
+
+   return true;
+   }
+
+   module.exports={ValidateSignUpData , ValidateLogInData}
