@@ -4,6 +4,8 @@ const bcrypt = require("bcrypt");
 const {User} = require("../models/userModel");
 const { authUser } = require("../middlewares/authCheck");
 const jwt = require("jsonwebtoken");
+const { upload } = require("../middlewares/multer");
+const {cloudinaryUpload} = require("../utils/cloudinary")
 
 
 
@@ -195,6 +197,7 @@ authRouter.post("/renewAccess" , async (req, res) => {
 authRouter.get("/profile" , authUser , async(req, res) => {
    const user = req.user;
 
+
    if (!user) {
     return res.send("Login first")
    }
@@ -223,7 +226,8 @@ authRouter.patch("/updatepassword" , authUser , async (req, res) => {
 
 
     try {
-        const user = req.user;
+        const user = req.user;        
+
         if (!user) {
             return res.send("Login First!!!")
         }
@@ -258,5 +262,80 @@ authRouter.patch("/updatepassword" , authUser , async (req, res) => {
 
 } )
 
+authRouter.patch("/updateavatarimage" , authUser , upload.single('avatar') ,  async (req, res) => {
+
+   try {
+
+    const user = req.user;
+
+    if (!user) {
+        return res.send("Log In first")
+    }
+
+     const avatarPath = req.file?.path;
+
+
+     if (!avatarPath) {
+        res.send("Avatar file is missing")
+     }
+
+   const result = await cloudinaryUpload(avatarPath);
+
+ const UpdatedUser = await User.findByIdAndUpdate({_id: user._id}, 
+    {
+        $set: {avatarImage: result.url}
+    },
+    {new: true}
+  ).select("-password")
+   
+   res.status(200).json({message: "success",
+    UpdatedUser
+   })
+
+    
+   } catch (error) {
+    console.log("ERROR avatar update : " ,error);
+    return res.send("ERROR avatar update : " + error)
+    
+   }
+})
+
+authRouter.patch("/updatecoverimage" , authUser , upload.single('coverImage') ,  async (req, res) => {
+
+   try {
+
+    const user = req.user;
+
+    if (!user) {
+        return res.send("Log In first")
+    }
+
+     const coverImagePath = req.file?.path;
+
+
+     if (!coverImagePath) {
+        res.send("Cover Image file is missing")
+     }
+
+   const result = await cloudinaryUpload(coverImagePath);
+
+ const UpdatedUser = await User.findByIdAndUpdate({_id: user._id}, 
+    {
+        $set: {coverImage: result.url}
+    },
+    {new: true}
+  ).select("-password")
+   
+   res.status(200).json({message: "success",
+    UpdatedUser
+   })
+
+    
+   } catch (error) {
+    console.log("ERROR coverImage update : " ,error);
+    return res.send("ERROR coverImage update : " + error)
+    
+   }
+})
 
 module.exports={authRouter};

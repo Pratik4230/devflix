@@ -4,12 +4,12 @@ const fs = require('fs');
 
 
 cloudinary.config({ 
-    cloud_name:proces.env.CLOUDINARY_CLOUD_NAME , 
-    api_key: proces.env.CLOUDINARY_API_KEY, 
-    api_secret: proces.env.CLOUDINARY_API_SECRET
+    cloud_name:process.env.CLOUDINARY_CLOUD_NAME , 
+    api_key: process.env.CLOUDINARY_API_KEY, 
+    api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-const cloudinaryUpload = async (lacalFilePath) => {
+const cloudinaryUpload = async (localFilePath) => {
     try {
         if (!localFilePath) {
             return null;
@@ -18,11 +18,23 @@ const cloudinaryUpload = async (lacalFilePath) => {
      resource_type: "auto",
          })
      console.log("file uploaded on cloudinary URL : ", uploadResult.url);
-        fs.unlinkSync(localFilePath)
+        
+     fs.unlink(localFilePath , (error) =>{
+        if (error) {
+            console.error("Error deleting local file", error);
+        }
+     })
         return uploadResult;
 
     } catch (error) {
-        fs.unlinkSync(localFilePath) // remove the locally saved temporary file as the upload operation got failed
+        fs.unlink(localFilePath, (err) => {
+            if (err) {
+                console.error("Error deleting local file after failure", err);
+            }
+        });
+
         return null;
     }
 }
+
+module.exports={cloudinaryUpload}
