@@ -192,5 +192,71 @@ authRouter.post("/renewAccess" , async (req, res) => {
     }
 })
 
+authRouter.get("/profile" , authUser , async(req, res) => {
+   const user = req.user;
+
+   if (!user) {
+    return res.send("Login first")
+   }
+
+   try {
+    const profile = user.toObject();
+ 
+    const removeKeys = ["refreshToken", "password" ];
+ 
+    removeKeys.forEach(key => {
+     delete profile[key];
+    })
+ 
+    res.status(200).json({
+     message: "User Profile",
+     data: profile
+    })
+   } catch (error) {
+    console.log("ERROR while getProfile : ", error);
+    return res.send("ERROR while getProfile : " + error)
+   }
+   
+})
+
+authRouter.patch("/updatepassword" , authUser , async (req, res) => {
+
+
+    try {
+        const user = req.user;
+        if (!user) {
+            return res.send("Login First!!!")
+        }
+    
+        const { oldPassword , newPassword} = req.body;
+    
+       const isPasswordValid = await user.getPasswordValid(oldPassword);
+    
+    if (!isPasswordValid) {
+       return res.send("Invalid Credentials");
+    }
+    
+    const validatePassword = (password) => {
+        return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password);
+    };
+    
+     if(!validatePassword(newPassword)){
+        return res.send("Enter strong new Password")
+     }
+    
+     const hashedPassword  =  await bcrypt.hash(newPassword , 11)
+       
+     user.password = hashedPassword;
+    
+     await user.save({validateBeforeSave: false});
+    
+     return res.status(200).send("password changed successfully")
+    } catch (error) {
+        console.log("ERROR password update : " , error);
+       return req.send("ERROR password update : " + error)
+    }
+
+} )
+
 
 module.exports={authRouter};
