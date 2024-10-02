@@ -338,4 +338,5 @@ authRouter.patch("/updatecoverimage" , authUser , upload.single('coverImage') , 
    }
 })
 
+
 module.exports={authRouter};
