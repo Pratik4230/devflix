@@ -1,15 +1,13 @@
-const express = require("express");
+
 const {ValidateSignUpData, ValidateLogInData} = require("../utils/validations");
 const bcrypt = require("bcrypt");
 const {User} = require("../models/userModel");
-const { authUser } = require("../middlewares/authCheck");
+
 const jwt = require("jsonwebtoken");
-const { upload } = require("../middlewares/multer");
+
 const {cloudinaryUpload} = require("../utils/cloudinary")
+const cloudinary = require('cloudinary').v2;
 
-
-
-const authRouter = express.Router();
 
 const options = {
     httpOnly: true,
@@ -38,7 +36,7 @@ const options = {
 
 }
 
-authRouter.post("/signup" , async (req, res) => {
+ const signUpUser =  async (req, res) => {
 try {
     // console.log(req.body);
 
@@ -83,9 +81,9 @@ const user  = new User({
     
 }
    
-})
+}
 
-authRouter.post("/login" , async (req, res) => {
+const logInUser = async (req, res) => {
     try {
         const {emailId , password} = req.body;
 
@@ -127,9 +125,9 @@ authRouter.post("/login" , async (req, res) => {
         console.log("ERROR login : " , error);
         
     }
-})
+}
 
-authRouter.post("/logout" , authUser , async (req, res) => {
+const logoutUser = async (req, res) => {
    
     await User.findByIdAndUpdate(
 
@@ -151,9 +149,9 @@ authRouter.post("/logout" , authUser , async (req, res) => {
     .json("User logged Out")
 
    
-})
+}
 
-authRouter.post("/renewAccess" , async (req, res) => {
+const renewAccess = async (req, res) => {
 
     try { 
        
@@ -192,9 +190,9 @@ authRouter.post("/renewAccess" , async (req, res) => {
         console.log("ERROR in renewToken: " , error);
         
     }
-})
+}
 
-authRouter.get("/profile" , authUser , async(req, res) => {
+const getProfile = async(req, res) => {
    const user = req.user;
 
 
@@ -220,9 +218,9 @@ authRouter.get("/profile" , authUser , async(req, res) => {
     return res.send("ERROR while getProfile : " + error)
    }
    
-})
+}
 
-authRouter.patch("/updatepassword" , authUser , async (req, res) => {
+const updatePassword = async (req, res) => {
 
 
     try {
@@ -260,9 +258,9 @@ authRouter.patch("/updatepassword" , authUser , async (req, res) => {
        return req.send("ERROR password update : " + error)
     }
 
-} )
+} 
 
-authRouter.patch("/updateavatarimage" , authUser , upload.single('avatar') ,  async (req, res) => {
+const updateAvatarImage =   async (req, res) => {
 
    try {
 
@@ -281,9 +279,21 @@ authRouter.patch("/updateavatarimage" , authUser , upload.single('avatar') ,  as
 
    const result = await cloudinaryUpload(avatarPath);
 
+   if (!result) {
+    return res.send("Something went wrong while updating avatar")
+   }
+
+   if (user.avatarImage?.public_id) {
+    await cloudinary.uploader.destroy(user.coverImage.public_id)
+   }
+   
  const UpdatedUser = await User.findByIdAndUpdate({_id: user._id}, 
     {
-        $set: {avatarImage: result.url}
+        $set: {
+            avatarImage: {
+                url:result?.url || result?.secure_url,
+                public_id: result.public_id
+            } }
     },
     {new: true}
   ).select("-password")
@@ -298,9 +308,9 @@ authRouter.patch("/updateavatarimage" , authUser , upload.single('avatar') ,  as
     return res.send("ERROR avatar update : " + error)
     
    }
-})
+}
 
-authRouter.patch("/updatecoverimage" , authUser , upload.single('coverImage') ,  async (req, res) => {
+const updateCoverImage =  async (req, res) => {
 
    try {
 
@@ -319,9 +329,21 @@ authRouter.patch("/updatecoverimage" , authUser , upload.single('coverImage') , 
 
    const result = await cloudinaryUpload(coverImagePath);
 
+   if (!result) {
+    return res.send("something went wrong while updating cover image")
+   }
+
+   if (user.coverImage?.public_id) {
+      await cloudinary.uploader.destroy(user.coverImage.public_id);
+   }
+
  const UpdatedUser = await User.findByIdAndUpdate({_id: user._id}, 
     {
-        $set: {coverImage: result.url}
+        $set: {
+            coverImage:{
+                url:result.url || result?.secure_url,
+                public_id: result.public_id
+            } }
     },
     {new: true}
   ).select("-password")
@@ -336,7 +358,7 @@ authRouter.patch("/updatecoverimage" , authUser , upload.single('coverImage') , 
     return res.send("ERROR coverImage update : " + error)
     
    }
-})
+}
 
 
-module.exports={authRouter};
+module.exports={signUpUser, logInUser,logoutUser,renewAccess, getProfile , updatePassword, updateAvatarImage, updateCoverImage};

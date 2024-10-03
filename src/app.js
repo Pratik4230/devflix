@@ -2,8 +2,6 @@ const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 
-const {authRouter} = require("./routes/userAuth");
-
 
 const app = express();
 
@@ -19,7 +17,12 @@ app.use(express.static("public"));
 app.use(cookieParser());
 
 
-app.use("/user" , authRouter)
+// import routes
+const userRouter = require("./routes/userRoutes")
+
+
+// declaring routes
+app.use("/user" , userRouter)
 
 
 module.exports = {app};

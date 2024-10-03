@@ -42,11 +42,14 @@ const userSchema = new mongoose.Schema({
    },
 
    avatarImage: {
-    type:String,
+    url: { type: String },   
+    public_id: { type: String } 
    },
    coverImage: {
-    type: String,
+    url: { type: String }, 
+    public_id: { type: String }  
    },
+
 
    watchHistory:[
     {
