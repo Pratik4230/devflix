@@ -19,10 +19,11 @@ app.use(cookieParser());
 
 // import routes
 const userRouter = require("./routes/userRoutes")
+const postRouter = require("./routes/postRoutes")
 
 
 // declaring routes
-app.use("/user" , userRouter)
-
+app.use("/user" , userRouter);
+app.use("/post" , postRouter);
 
 module.exports = {app};
