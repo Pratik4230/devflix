@@ -284,7 +284,7 @@ const updateAvatarImage =   async (req, res) => {
    }
 
    if (user.avatarImage?.public_id) {
-    await cloudinary.uploader.destroy(user.coverImage.public_id)
+    await cloudinary.uploader.destroy(user.avatarImage.public_id)
    }
    
  const UpdatedUser = await User.findByIdAndUpdate({_id: user._id}, 
