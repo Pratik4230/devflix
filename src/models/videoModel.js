@@ -2,12 +2,18 @@ const mongoose = require("mongoose");
 
 const videoSchema = new mongoose.Schema({
     video: {
-        type:String,
+        type: {
+            url: String,
+            public_id: String,
+        },
         required: true,
     },
 
     thumbnail: {
-        type:String,
+        type: {
+            url: String,
+            public_id: String,
+        },
         required: true,
     },
 
@@ -33,6 +39,10 @@ const videoSchema = new mongoose.Schema({
     owner: {
         type:mongoose.Schema.Types.ObjectId,
         ref:"User",
+    },
+    isPublished: {
+        type: Boolean,
+        default: false,
     },
 }, {timestamps:true});
 
