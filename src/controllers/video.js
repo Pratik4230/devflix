@@ -185,8 +185,43 @@ const deleteVideo = async (req, res) =>{
     }
 }
 
-// const toggleVideoPublish = async (req,res) => {
-//     const {videoId}
-// }
+const toggleVideoPublish = async (req,res) => {
+    try {
+        const {videoId} = req.params;
+    
+        if (!isValidObjectId(videoId)) {
+            return res.send("invalid video id")
+        }
+    
+        const video = await Video.findById(videoId);
+    
+        if (!video) {
+            return res.send("Video doen't exists")
+        }
+    
+        if(video.owner?.toString() !== req.user?._id.toString()){
+            return res.send("Unauthorized access")
+        }
+    
+        const toggled = await Video.findByIdAndUpdate({
+            _id: videoId
+        }, {
+           $set:{
+            isPublished: !video.isPublished
+           }
+        },
+        {new:true}
+    )
+    
+    if (!toggled) {
+        return res.send("Failed to toggle please try again")
+    }
+    
+    return res.status(200).json({message:"success", toggled})
+    } catch (error) {
+        console.log("ERROR toggle video : " , error);
+        return res.send("ERROR toggle video : " + error)
+    }
+}
 
-module.exports={uploadVideo, updateVideo, deleteVideo}
+module.exports={uploadVideo, updateVideo, deleteVideo, toggleVideoPublish}
