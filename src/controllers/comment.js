@@ -23,7 +23,6 @@ const addComment = async (req,res) => {
         video: videoId,
         owner: req.user?._id
     })
-console.log(typeof(comment));
 
     if (!comment) {
         return res.send("failed to add comment please try again")
@@ -50,7 +49,6 @@ const updateComment = async (req, res) => {
   }
    
   const comment = await Comment.findById(commentId);
-console.log(typeof(comment));
 
   if (!comment) {
     return res.send("Comment not found")

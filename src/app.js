@@ -22,6 +22,7 @@ const userRouter = require("./routes/userRoutes")
 const postRouter = require("./routes/postRoutes")
 const videoRouter = require("./routes/videoRoutes")
 const commentRouter = require("./routes/commentRoutes")
+const likeRouter = require("./routes/likeRoutes")
 
 
 // declaring routes
@@ -29,5 +30,5 @@ app.use("/user" , userRouter);
 app.use("/post" , postRouter);
 app.use("/video", videoRouter)
 app.use("/comment", commentRouter)
-
+app.use("/like", likeRouter)
 module.exports = {app};
