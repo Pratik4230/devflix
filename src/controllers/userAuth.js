@@ -122,7 +122,13 @@ const logInUser = async (req, res) => {
 
        
     } catch (error) {
-        console.log("ERROR login : " , error);
+        if (error.code === 'ECONNRESET') {
+            console.error("Network connection error: ", error.message);
+            return res.status(500).send("Network error, please try again.");
+        }
+        
+        console.error("Error during login: ", error);
+        return res.status(500).send("An unexpected error occurred. Please try again.");
         
     }
 }

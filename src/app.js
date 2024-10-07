@@ -17,22 +17,24 @@ app.use(express.static("public"));
 app.use(cookieParser());
 
 
-// import routes
+
 const userRouter = require("./routes/userRoutes")
 const postRouter = require("./routes/postRoutes")
 const videoRouter = require("./routes/videoRoutes")
 const commentRouter = require("./routes/commentRoutes")
 const likeRouter = require("./routes/likeRoutes")
 const playlistRouter = require("./routes/playlistRoutes")
+const subscriptionRouter = require("./routes/subscriptionRoutes")
 
 
-// declaring routes
+
 app.use("/user" , userRouter);
 app.use("/post" , postRouter);
 app.use("/video", videoRouter)
 app.use("/comment", commentRouter)
 app.use("/like", likeRouter)
 app.use("/playlist", playlistRouter)
+app.use("/subscription", subscriptionRouter)
 
 
 module.exports = {app};
