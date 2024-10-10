@@ -38,7 +38,7 @@ const toggleSubscription = async (req,res) => {
         })
     
         if (!subscription) {
-            return res.send("Failed to subscribe please try again")
+            return res.status(500).send("Failed to subscribe please try again")
         }
     
         await subscription.save();
@@ -48,7 +48,7 @@ const toggleSubscription = async (req,res) => {
             message: "Subscribed Successfully"
         })
     } catch (error) {
-        console.log("Error toggle subscription : " , error);
+        return res.status(500).send("Error toggle subscription : " , error);
         
     }
 }

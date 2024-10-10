@@ -9,10 +9,21 @@ const {cloudinaryUpload} = require("../utils/cloudinary")
 const cloudinary = require('cloudinary').v2;
 
 
-const options = {
+const accessTokenOptions = {
     httpOnly: true,
-    secure: true
-}
+    secure: false,      
+    sameSite: 'lax', 
+    maxAge: 7 * 24 * 60 * 60 * 1000,  
+   
+};
+
+const refreshTokenOptions = {
+    httpOnly: true,
+    secure: false,      
+    sameSite: 'lax',
+    maxAge: 30 * 24 * 60 * 60 * 1000, 
+             
+};
 
  async function createAccessTokenAndRefreshToken(user_id){
 
@@ -38,23 +49,23 @@ const options = {
 
  const signUpUser =  async (req, res) => {
 try {
-    // console.log(req.body);
+   
 
     const { password,userName , emailId , channelName} = req.body;
 
-    const valid = ValidateSignUpData(req);
-    // console.log(valid);
+       ValidateSignUpData(req);
+   
     
    const existingUser = await User.findOne({
         emailId: emailId
     });
     if (existingUser) {
-        return res.send("User already created" )
+        return res.status(100).send("User already created" )
     }
     
     
  const hashedPassword  =  await bcrypt.hash(password , 11)
-// console.log("hash" , hashedPassword);
+
 
 const user  = new User({
       userName,
@@ -65,44 +76,52 @@ const user  = new User({
 
   await user.save();
 
-  let userWithoutPassword = user.toObject();
+  const createdUser = await User.findOne({emailId: emailId});
+
+  if (!createdUser) {
+    return res.status(404).send("somehting went wrong please try again")
+  }
+
+  const {accessToken , refreshToken} = await createAccessTokenAndRefreshToken(createdUser._id);
+        
+
+  let userWithoutPassword = createdUser.toObject();
   delete userWithoutPassword.password;
 
-  res.status(200).json({
-    message:"user signup successful",
+  return res
+  .status(201)
+  .cookie("accessToken" , accessToken , accessTokenOptions)
+  .cookie("refreshToken" , refreshToken ,refreshTokenOptions)
+  .json({message: "user signup successful !!!",
       data: userWithoutPassword
-})
+  })
 
 
 } catch (error) {
-    console.log(error);
-    
-    return res.status(400).send("Sign Up Error : " + error.message)
-    
+       return res.status(500)
+       .json({
+         message : "Sign Up Error Please try again ",
+         data : error.message
+       })
 }
-   
 }
 
 const logInUser = async (req, res) => {
     try {
         const {emailId , password} = req.body;
 
-        // console.log(req.body);
-        
-
-       const valid = ValidateLogInData(req);
-        // console.log(valid);
+        ValidateLogInData(req);
 
        const user = await User.findOne({emailId: emailId});
 
        if (!user) {
-        return res.send("User doen't exist");
+        return res.status(404).send("User doen't exist");
        };
 
      const isPasswordValid = await user.getPasswordValid(password);
 
      if (!isPasswordValid) {
-        return res.send("Invalid credentials")
+        return res.status(401).send("Invalid credentials")
      }
 
         const {accessToken , refreshToken} = await createAccessTokenAndRefreshToken(user._id);
@@ -113,47 +132,50 @@ const logInUser = async (req, res) => {
 
         return res
         .status(200)
-        .cookie("accessToken" , accessToken , options)
-        .cookie("refreshToken" , refreshToken ,options)
+        .cookie("accessToken" , accessToken , accessTokenOptions)
+        .cookie("refreshToken" , refreshToken ,refreshTokenOptions)
         .json({message: "login successful !!!",
             data: userWithoutPassword
         })
-
-
        
     } catch (error) {
-        if (error.code === 'ECONNRESET') {
-            console.error("Network connection error: ", error.message);
-            return res.status(500).send("Network error, please try again.");
-        }
-        
-        console.error("Error during login: ", error);
-        return res.status(500).send("An unexpected error occurred. Please try again.");
-        
+
+        return res.status(500)
+                  .json({
+                     message :"An unexpected error occurred. Please try again.",
+                    error
+                    });        
     }
 }
 
 const logoutUser = async (req, res) => {
    
-    await User.findByIdAndUpdate(
-
-        req.user._id,
-        {
-            $unset:{               //This is a MongoDB operator used to remove a field from a document.
-                refreshToken: 1    //refreshToken: 1: This specifies that the refreshToken field should be removed from the user’s document in the database. 1 here is a flag indicating the field should be deleted.
+    try {
+        await User.findByIdAndUpdate(
+    
+            req.user._id,
+            {
+                $unset:{               
+                    refreshToken: 1   
+                }
+            },
+            {
+                new: true              
             }
-        },
-        {
-            new: true              //This tells Mongoose to return the updated document after applying the changes (i.e., removing the refreshToken).
-        }
-    )
-
-    return res
-    .status(200)
-    .clearCookie("accessToken", options)
-    .clearCookie("refreshToken", options)
-    .json("User logged Out")
-
+        )
+    
+        return res
+        .status(200)
+        .clearCookie("accessToken", accessTokenOptions)
+        .clearCookie("refreshToken", refreshTokenOptions)
+        .json("User logged Out")
+    
+    } catch (error) {
+        return res.status(500).json({
+            message : "unexpected error accured please try again",
+             error
+        })
+    }
    
 }
 
@@ -163,38 +185,38 @@ const renewAccess = async (req, res) => {
        
        const clientsRefreshToken = req.cookies?.refreshToken;
             if (!clientsRefreshToken) {
-                return res.send("No tokens")
+                return res.status(400).send("Please Log in again")
                }
-        //   console.log(clientsRefreshToken);
         
 
       const decodedData = jwt.verify(clientsRefreshToken , process.env.REFRESH_TOKEN_SECRET);
              if (!decodedData) {
-                 return res.send("Invalid Token");
+                 return res.status(400).send(" Please Log in again");
                 }
-        //  console.log(decodedData);
 
 
        const user = await User.findById(decodedData._id);
          if (!user) {
-             return res.send("Invalid Token");
+             return res.status(400).send(" Please Log in again");
             }
          
        if (clientsRefreshToken !== user?.refreshToken) {
-           return res.send("Invalid Token");
+           return res.status(401).send("Please Log in again");
        }
-     
 
       const {accessToken , refreshToken} = await createAccessTokenAndRefreshToken(user._id);
       
        return res
        .status(200)
-       .cookie("accessToken", accessToken , options)
-       .cookie("refreshToken", refreshToken , options)      
+       .cookie("accessToken", accessToken , accessTokenOptions)
+       .cookie("refreshToken", refreshToken , refreshTokenOptions)      
        .send("access token renewed")
     } catch (error) {
         console.log("ERROR in renewToken: " , error);
-        
+        res.status(500).json({
+            message: "something went wrong please try again",
+            error
+        })
     }
 }
 
@@ -203,7 +225,7 @@ const getProfile = async(req, res) => {
 
 
    if (!user) {
-    return res.send("Login first")
+    return res.status(401).send("Login first")
    }
 
    try {
@@ -220,20 +242,20 @@ const getProfile = async(req, res) => {
      data: profile
     })
    } catch (error) {
-    console.log("ERROR while getProfile : ", error);
-    return res.send("ERROR while getProfile : " + error)
+    return res.status(500).json({
+        message: " something went wront please try again ",
+         error
+        })
    }
    
 }
 
 const updatePassword = async (req, res) => {
-
-
     try {
         const user = req.user;        
 
         if (!user) {
-            return res.send("Login First!!!")
+            return res.status(401).send("Login First!!!")
         }
     
         const { oldPassword , newPassword} = req.body;
@@ -241,7 +263,7 @@ const updatePassword = async (req, res) => {
        const isPasswordValid = await user.getPasswordValid(oldPassword);
     
     if (!isPasswordValid) {
-       return res.send("Invalid Credentials");
+       return res.status(401).send("Invalid Credentials");
     }
     
     const validatePassword = (password) => {
@@ -249,7 +271,7 @@ const updatePassword = async (req, res) => {
     };
     
      if(!validatePassword(newPassword)){
-        return res.send("Enter strong new Password")
+        return res.status(400).send("Enter strong new Password")
      }
     
      const hashedPassword  =  await bcrypt.hash(newPassword , 11)
@@ -260,8 +282,11 @@ const updatePassword = async (req, res) => {
     
      return res.status(200).send("password changed successfully")
     } catch (error) {
-        console.log("ERROR password update : " , error);
-       return req.send("ERROR password update : " + error)
+      
+       return req.status(500).json({
+        message: "something went wrong ",
+         error
+    })
     }
 
 } 
@@ -273,20 +298,20 @@ const updateAvatarImage =   async (req, res) => {
     const user = req.user;
 
     if (!user) {
-        return res.send("Log In first")
+        return res.status(401).send("Log In first")
     }
 
      const avatarPath = req.file?.path;
 
 
      if (!avatarPath) {
-        res.send("Avatar file is missing")
+        res.status(400).send("Avatar file is missing")
      }
 
    const result = await cloudinaryUpload(avatarPath);
 
    if (!result) {
-    return res.send("Something went wrong while updating avatar")
+    return res.status(500).send("Something went wrong while updating avatar Please try again")
    }
 
    if (user.avatarImage?.public_id) {
@@ -310,9 +335,10 @@ const updateAvatarImage =   async (req, res) => {
 
     
    } catch (error) {
-    console.log("ERROR avatar update : " ,error);
-    return res.send("ERROR avatar update : " + error)
-    
+    return res.status(500).json({ 
+        message: "ERROR avatar update : " ,
+         error
+   })
    }
 }
 
@@ -323,20 +349,20 @@ const updateCoverImage =  async (req, res) => {
     const user = req.user;
 
     if (!user) {
-        return res.send("Log In first")
+        return res.status(401).send("Log In first")
     }
 
      const coverImagePath = req.file?.path;
 
 
      if (!coverImagePath) {
-        res.send("Cover Image file is missing")
+        res.status(400).send("Cover Image file is missing")
      }
 
    const result = await cloudinaryUpload(coverImagePath);
 
    if (!result) {
-    return res.send("something went wrong while updating cover image")
+    return res.status(500).send("something went wrong while updating cover image")
    }
 
    if (user.coverImage?.public_id) {
@@ -354,14 +380,17 @@ const updateCoverImage =  async (req, res) => {
     {new: true}
   ).select("-password")
    
-   res.status(200).json({message: "success",
+   res.status(200).json({
+    message: "success",
     UpdatedUser
    })
 
     
    } catch (error) {
-    console.log("ERROR coverImage update : " ,error);
-    return res.send("ERROR coverImage update : " + error)
+    return res.status(500).json({
+        message: "ERROR coverImage update : " ,
+         error
+        })
     
    }
 }
@@ -371,124 +400,133 @@ const getUserChannel = async(req, res) => {
     const {channelName} = req.params
 
     if (!username?.trim()) {
-       return res.send("username is missing")
+       return res.status(400).send("username is missing")
     }
-
-    const channel = await User.aggregate([
-        {
-            $match: {
-                channelName: channelName.toLowerCase()
-            }
-        },
-        {
-            $lookup: {
-                from: "subscriptions",
-                localField: "_id",
-                foreignField: "channel",
-                as: "subscribers"
-            }
-        },
-        {
-            $lookup: {
-                from: "subscriptions",
-                localField: "_id",
-                foreignField: "subscriber",
-                as: "subscribedTo"
-            }
-        },
-        {
-            $addFields: {
-                subscribersCount: {
-                    $size: "$subscribers"
-                },
-                SubscribedToCount: {
-                    $size: "$subscribedTo"
-                },
-                isSubscribed: {
-                    $cond: {
-                        if: {$in: [req.user?._id, "$subscribers.subscriber"]},
-                        then: true,
-                        else: false
+try {
+    
+        const channel = await User.aggregate([
+            {
+                $match: {
+                    channelName: channelName.toLowerCase()
+                }
+            },
+            {
+                $lookup: {
+                    from: "subscriptions",
+                    localField: "_id",
+                    foreignField: "channel",
+                    as: "subscribers"
+                }
+            },
+            {
+                $lookup: {
+                    from: "subscriptions",
+                    localField: "_id",
+                    foreignField: "subscriber",
+                    as: "subscribedTo"
+                }
+            },
+            {
+                $addFields: {
+                    subscribersCount: {
+                        $size: "$subscribers"
+                    },
+                    SubscribedToCount: {
+                        $size: "$subscribedTo"
+                    },
+                    isSubscribed: {
+                        $cond: {
+                            if: {$in: [req.user?._id, "$subscribers.subscriber"]},
+                            then: true,
+                            else: false
+                        }
                     }
                 }
+            },
+            {
+                $project: {
+                    channelName: 1,
+                    userName: 1,
+                    subscribersCount: 1,
+                    SubscribedToCount: 1,
+                    isSubscribed: 1,
+                    avatarImage: 1,
+                    coverImage: 1
+                }
             }
-        },
-        {
-            $project: {
-                channelName: 1,
-                userName: 1,
-                subscribersCount: 1,
-                SubscribedToCount: 1,
-                isSubscribed: 1,
-                avatarImage: 1,
-                coverImage: 1
-            }
+        ])
+    
+        if (!channel?.length) {
+            return res.status(404).send("channel doesn't exists")
         }
-    ])
-
-    if (!channel?.length) {
-        return res.send("channel doesn't exists")
-    }
-
-    return res
-    .status(200)
-    .json({
-        message:  " success",
-        data: channel[0]
-    })
+    
+        return res
+        .status(200)
+        .json({
+            message:  " success",
+            data: channel[0]
+        })
+} catch (error) {
+    return res.status(500).send("something went wrong" , error)
+}
     
 }
 
 
 
 const getWatchHistory = async(req, res) => {
-    const user = await User.aggregate([
-        {
-            $match: {
-                _id: new mongoose.Types.ObjectId(req.user._id)
-            }
-        },
-        {
-            $lookup: {
-                from: "videos",
-                localField: "watchHistory",
-                foreignField: "_id",
-                as: "watchHistory",
-                pipeline: [
-                    {
-                        $lookup: {
-                            from: "users",
-                            localField: "owner",
-                            foreignField: "_id",
-                            as: "owner",
-                            pipeline: [
-                                {
-                                    $project: {
-                                        channelName: 1,
-                                        userName: 1,
-                                        avatarImage: 1
+    try {
+        const user = await User.aggregate([
+            {
+                $match: {
+                    _id: new mongoose.Types.ObjectId(req.user._id)
+                }
+            },
+            {
+                $lookup: {
+                    from: "videos",
+                    localField: "watchHistory",
+                    foreignField: "_id",
+                    as: "watchHistory",
+                    pipeline: [
+                        {
+                            $lookup: {
+                                from: "users",
+                                localField: "owner",
+                                foreignField: "_id",
+                                as: "owner",
+                                pipeline: [
+                                    {
+                                        $project: {
+                                            channelName: 1,
+                                            userName: 1,
+                                            avatarImage: 1
+                                        }
                                     }
+                                ]
+                            }
+                        },
+                        {
+                            $addFields:{
+                                owner:{
+                                    $first: "$owner"
                                 }
-                            ]
-                        }
-                    },
-                    {
-                        $addFields:{
-                            owner:{
-                                $first: "$owner"
                             }
                         }
-                    }
-                ]
+                    ]
+                }
             }
+        ])
+    
+        return res.status(200).json({
+            message: "Success",
+            data: user[0].watchHistory,
         }
-    ])
-
-    return res.status(200).json({
-        message: "Success",
-        data: user[0].watchHistory,
+        )
+    } catch (error) {
+        return res.status(500).send("something went wrong :" + error
+        )
     }
-    )
     
 }
 

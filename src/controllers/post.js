@@ -5,13 +5,13 @@ const createPost = async (req, res) => {
     const user = req.user;
 
     if (!user) {
-      return res.send("Login first");
+      return res.status(401).send("Login first");
     }
 
     const { content } = req.body;
 
     if (!content) {
-      return res.send("content is required");
+      return res.status(400).send("content is required");
     }
 
     const post = new Post({
@@ -21,14 +21,14 @@ const createPost = async (req, res) => {
 
     await post.save();
 
-    return res.status(400).json({
+    return res.status(201).json({
       message: "Post successfully created !!!",
       data: post,
     });
   } catch (error) {
-    console.log("ERROR creating post : ", error);
+    
 
-    return res.send("ERROR : " + error);
+    return res.status(500).send("ERROR : " + error);
   }
 };
 
@@ -37,18 +37,18 @@ const updatePost = async (req, res) => {
   const { postId } = req.params;
 
   if (!content) {
-    return res.send("Content is required");
+    return res.status(400).send("Content is required");
   }
 
   try {
     const post = await Post.findById(postId);
 
     if (!post) {
-      return res.send("Post not found");
+      return res.status(404).send("Post not found");
     }
 
     if (post?.owner.toString() !== req.user?._id.toString()) {
-      return res.send("Only owner can edit this post");
+      return res.status(401).send("Only owner can edit this post");
     }
 
     const updatedPost = await Post.findByIdAndUpdate(
@@ -62,7 +62,7 @@ const updatePost = async (req, res) => {
     );
 
     if (!updatedPost) {
-      return res.send("Something went wrong please try again");
+      return res.status(500).send("Something went wrong please try again");
     }
 
     return res.status(200).json({
@@ -70,8 +70,8 @@ const updatePost = async (req, res) => {
       data: updatedPost,
     });
   } catch (error) {
-    console.log("ERROR updating post : ", error);
-    return res.send("ERROR updating post : " + error);
+   
+    return res.status(500).send("ERROR updating post : " + error);
   }
 };
 
@@ -80,17 +80,17 @@ const deletePost = async (req, res) => {
     const { postId } = req.params;
 
     if (!postId) {
-      return res.send("invalid postId");
+      return res.status(400).send("invalid postId");
     }
 
     const post = await Post.findById(postId);
 
     if (!post) {
-      return res.send("Post not found");
+      return res.status(404).send("Post not found");
     }
 
     if (post.owner.toString() !== req.user?._id.toString()) {
-      return  res.send("only post owner can delete the post")
+      return  res.status(401).send("only post owner can delete the post")
     }
 
   await Post.findByIdAndDelete(postId);
@@ -98,8 +98,8 @@ const deletePost = async (req, res) => {
   res.status(200).send("Post delete successful")
 
   } catch (error) {
-    console.log("ERROR deleting post : ", error);
-    return res.send("ERROR deleting post : " + error);
+    
+    return res.status(500).send("ERROR deleting post : " + error);
   }
 };
 

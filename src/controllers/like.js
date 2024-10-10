@@ -8,7 +8,7 @@ const toggleVideoLike = async (req,res) => {
         const {videoId} = req.params;
     
         if (!isValidObjectId(videoId)) {
-            return res.send("Invalid video id")
+            return res.status(400).send("Invalid video id")
         }
     
         const alreadyLiked = await Like.findOne({
@@ -31,7 +31,7 @@ const toggleVideoLike = async (req,res) => {
         });
     
         if (!like) {
-            return res.send("failed to like video please try again")
+            return res.status(500).send("failed to like video please try again")
         }
     
         await like.save();
@@ -41,7 +41,7 @@ const toggleVideoLike = async (req,res) => {
             isLiked: true
         })
     } catch (error) {
-        return res.send("ERROR likeVideo : " + error)
+        return res.status(500).send("ERROR likeVideo : " + error)
     }
 }
 
@@ -50,7 +50,7 @@ const toggleCommentLike = async (req, res) => {
         const {commentId} = req.params;
     
         if (!isValidObjectId(commentId)) {
-            return res.send("Invalid comment id")
+            return res.status(400).send("Invalid comment id")
         }
     
         const alreadyLiked = await Like.findOne({
@@ -61,7 +61,7 @@ const toggleCommentLike = async (req, res) => {
         if (alreadyLiked) {
             await Like.findByIdAndDelete(alreadyLiked._id);
 
-            return res.json({
+            return res.status(200).json({
                 message: " unliked comment",
                 isLiked: false
             })
@@ -73,7 +73,7 @@ const toggleCommentLike = async (req, res) => {
         })
     
         if (!like) {
-            return res.send("failed to like comment please try again")
+            return res.status(500).send("failed to like comment please try again")
         }
     
         await like.save();
@@ -83,7 +83,7 @@ const toggleCommentLike = async (req, res) => {
             isLiked: true
         })
     } catch (error) {
-        return res.send("ERROR likeComment : " + error)
+        return res.status(500).send("ERROR likeComment : " + error)
     }
 }
 
@@ -92,7 +92,7 @@ const togglePostLike = async (req, res) => {
         const {postId} = req.params;
     
         if (!isValidObjectId) {
-            return res.send("Invalid post id")
+            return res.status(400).send("Invalid post id")
         }
     
         const alreadyLiked = await Like.findOne({
@@ -102,7 +102,7 @@ const togglePostLike = async (req, res) => {
     
         if (alreadyLiked) {
             await Like.findByIdAndDelete(alreadyLiked._id)
-            return res.json({
+            return res.status(200).json({
                 message: " unliked post",
                 isLiked: false
             })
@@ -114,7 +114,7 @@ const togglePostLike = async (req, res) => {
         })
     
         if (!like) {
-            return res.send("failed to like post please try again") 
+            return res.status(500).send("failed to like post please try again") 
         }
 
         await like.save();
@@ -124,7 +124,7 @@ const togglePostLike = async (req, res) => {
             isLiked: true
         })
     } catch (error) {
-        return res.send("ERROR likePost : " + error)
+        return res.status(500).send("ERROR likePost : " + error)
     }
 }
 

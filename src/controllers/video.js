@@ -11,27 +11,27 @@ const uploadVideo = async(req, res) => {
         const {title, description} = req.body;
     
         if (!(title && description)) {
-            return res.send("All fields are required")
+            return res.status(400).send("All fields are required")
         }
     
         const videoFilePath = req.files?.video[0].path;
         const thumbnailFilePath = req.files?.thumbnail[0].path;
     
         if (!videoFilePath) {
-            return res.send("video path is required")
+            return res.status(400).send("video path is required")
         }
         if (!thumbnailFilePath) {
-            return res.send("thumbnail path is required")
+            return res.status(400).send("thumbnail path is required")
         }
     
       const videoCloud =  await cloudinaryUpload(videoFilePath);
        const thumbnailCloud = await cloudinaryUpload(thumbnailFilePath);
     
        if (!videoCloud) {
-        return res.send("Something went wrong while uploading video Please try again")
+        return res.status(500).send("Something went wrong while uploading video Please try again")
        }
        if (!thumbnailCloud) {
-        return res.send("Something went wrong while uploading video Please try again")
+        return res.status(500).send("Something went wrong while uploading video Please try again")
        }
     
        const video = new Video({
@@ -58,7 +58,7 @@ const uploadVideo = async(req, res) => {
        const uploadedVideo = await Video.findById(video._id)
     
        if (!uploadedVideo) {
-        throw new ApiError(500, "videoUpload failed please try again !!!");
+        return res.status(500).send("videoUpload failed please try again !!!");
     }
     
     return res
@@ -67,8 +67,8 @@ const uploadVideo = async(req, res) => {
        message: "Video uploaded successfully",
        video});
     } catch (error) {
-        console.log("ERROR uploading video", error);
-        res.send("ERROR uploading video : " + error)
+        
+        res.status(500).send("ERROR uploading video : " + error)
         
     }
 }
@@ -79,7 +79,7 @@ const updateVideo = async (req, res) => {
      const { videoId } = req.params;
  
      if (!isValidObjectId(videoId)) {
-         return res.send( "Invalid videoId");
+         return res.status(400).send( "Invalid videoId");
      }
  
    
@@ -90,7 +90,7 @@ const updateVideo = async (req, res) => {
  
     
      if (video.owner.toString() !== req.user._id.toString()) {
-         return res.send("You can't edit this video as you are not the owner")
+         return res.status(401).send("You can't edit this video as you are not the owner")
      }
  
      const thumbnailLocalPath = req.file?.path;
@@ -101,7 +101,7 @@ const updateVideo = async (req, res) => {
  
          thumbnail = await cloudinaryUpload(thumbnailLocalPath);
          if (!thumbnail) {
-             return res.send("Thumbnail upload failed Please try again");
+             return res.status(500).send("Thumbnail upload failed Please try again");
          }
  
          cloudinaryDelete(thumbnailToDelete)
@@ -124,7 +124,7 @@ const updateVideo = async (req, res) => {
      }
  
      if (Object.keys(updateFields).length === 0) {
-         return res.send("No updates provided");
+         return res.status(400).send("No updates provided");
      }
  
  
@@ -135,7 +135,7 @@ const updateVideo = async (req, res) => {
      );
  
      if (!updatedVideo) {
-         return res.send("Failed to update, please try again");
+         return res.status(500).send("Failed to update, please try again");
      }
  
      return res.status(200).json({
@@ -144,8 +144,8 @@ const updateVideo = async (req, res) => {
  
      }) 
    } catch (error) {
-    console.log("Error updating video details : " , error);
-        return res.send("Error updating video details : " + error)
+    
+        return res.status(500).send("Error updating video details : " + error)
    }
 }
   
@@ -155,33 +155,33 @@ const deleteVideo = async (req, res) =>{
         const {videoId} = req.params;
     
         if (!isValidObjectId(videoId)) {
-            return res.send("invalid video id")
+            return res.status(400).send("invalid video id")
         }
     
         const video = await Video.findById(videoId);
     console.log("video" , video);
     
         if (!video) {
-            return res.send("Video not found")
+            return res.status(404).send("Video not found")
         }
     
         if (video.owner?.toString() !== req.user?._id.toString()) {
-            return res.send("only owner can delete video")
+            return res.status(401).send("only owner can delete video")
         }
     
       const dele =  await Video.findByIdAndDelete(video?._id);
 
       if (!dele) {
-        return res.send("something went wrong while deleting")
+        return res.status(500).send("something went wrong while deleting")
       }
       
     cloudinaryDelete(video.video.public_id, "video")
     cloudinaryDelete(video.thumbnail.public_id)
       
-      res.send("success delete")
+      return res.status(200).send("success delete")
     } catch (error) {
-        console.log("ERROR deleting video : " , error);
-        res.send("ERROR deleting video : " + error)
+        
+        res.status(500).send("ERROR deleting video : " + error)
     }
 }
 
@@ -190,17 +190,17 @@ const toggleVideoPublish = async (req,res) => {
         const {videoId} = req.params;
     
         if (!isValidObjectId(videoId)) {
-            return res.send("invalid video id")
+            return res.status(404).send("invalid video id")
         }
     
         const video = await Video.findById(videoId);
     
         if (!video) {
-            return res.send("Video doen't exists")
+            return res.status(404).send("Video doen't exists")
         }
     
         if(video.owner?.toString() !== req.user?._id.toString()){
-            return res.send("Unauthorized access")
+            return res.status(401).send("Unauthorized access")
         }
     
         const toggled = await Video.findByIdAndUpdate({
@@ -214,13 +214,13 @@ const toggleVideoPublish = async (req,res) => {
     )
     
     if (!toggled) {
-        return res.send("Failed to toggle please try again")
+        return res.status(500).send("Failed to toggle please try again")
     }
     
     return res.status(200).json({message:"success", toggled})
     } catch (error) {
-        console.log("ERROR toggle video : " , error);
-        return res.send("ERROR toggle video : " + error)
+    
+        return res.status(500).send("ERROR toggle video : " + error)
     }
 }
 
