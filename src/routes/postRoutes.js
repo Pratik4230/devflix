@@ -1,14 +1,11 @@
 const express = require("express");
+const { createPost, updatePost, deletePost } = require("../controllers/post");
 const { authUser } = require("../middlewares/authCheck");
-
 
 const router = express.Router();
 
-const { createPost, updatePost, deletePost } = require("../controllers/post");
+router.route("/create").post(authUser, createPost);
+router.route("/update/:postId").patch(authUser, updatePost);
+router.route("/delete/:postId").delete(authUser, deletePost);
 
-router.route("/createpost").post(authUser , createPost);
-router.route("/updatepost/:postId").patch(authUser, updatePost);
-router.route("/deletepost/:postId").delete(authUser, deletePost);
-
-
-module.exports=router;
+module.exports = router;

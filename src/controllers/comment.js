@@ -120,5 +120,80 @@ const deleteComment = async (req, res) => {
     }
 }
 
+// const getVideoComments = async (req, res) => {
+//     const {videoId} = req.params;
+//     try {
+//         if (!isValidObjectId(videoId)) {
+//             return res.status(400).send("Invalid video id")
+//         }
+//         const video = await Video.findById(videoId);
+//         if (!video) {
+//             return res.status(404).send("video not found")
+//         }
+//         const comments = Comment.aggregate([
+//             {
+//               $match: {
+//                 video: new mongoose.Types.ObjectId(videoId)  // Match the specific video ID
+//               }
+//             },
+//             {
+//               $lookup: {
+//                 from: 'users',
+//                 localField: 'owner',
+//                 foreignField: '_id',
+//                 as: 'owner'
+//               }
+//             },
+//             {
+//               $lookup: {
+//                 from: 'likes',
+//                 localField: '_id',
+//                 foreignField: 'comment',
+//                 as: 'likes'
+//               }
+//             },
+//             {
+//               $addFields: {
+//                 likesCount: { '$size': '$likes' },  // Calculate the number of likes
+//                 owner: { '$first': '$owner' },  // Get the first user from the owner lookup
+//                 isLiked: {
+//                   $cond: {
+//                     if: { '$gt': [{ '$size': '$likes' }, 0] },  // Check if there are any likes
+//                     then: {
+//                       $in: [new mongoose.Types.ObjectId(userId), '$likes.likedBy']  // Check if the current user has liked this comment
+//                     },
+//                     else: false
+//                   }
+//                 }
+//               }
+//             },
+//             {
+//               $sort: {
+//                 createdAt: -1  
+//               }
+//             },
+//             {
+//               $project: {
+//                 content: 1,
+//                 createdAt: 1,
+//                 likesCount: 1,
+//                 owner: {
+//                   channelName: 1,
+//                   userName: 1,
+//                   avatarImage: 1
+//                 },
+//                 isLiked: 1 
+//               }
+//             }
+//           ])
+          
+//         return res.status(200).json({
+//             message: "comments fetched successfully",
+//             comments
+//         })
+//     } catch (error) {
+//         return res.status(500).send("Error while fetching comments " + error)
+//     }
+// }
 
 module.exports={addComment, updateComment, deleteComment}

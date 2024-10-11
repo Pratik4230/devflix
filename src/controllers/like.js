@@ -1,131 +1,119 @@
 const { isValidObjectId } = require("mongoose");
-const { Like } = require("../models/likeModel");
+const {Video} = require("../models/videoModel");
+const {Comment} = require("../models/commentModel");
+const {Post} = require("../models/postModel");
 
-
-
-const toggleVideoLike = async (req,res) => {
+const toggleVideoLike = async (req, res) => {
     try {
-        const {videoId} = req.params;
-    
+        const { videoId } = req.params;
+
         if (!isValidObjectId(videoId)) {
-            return res.status(400).send("Invalid video id")
+            return res.status(400).send("Invalid video id");
         }
-    
-        const alreadyLiked = await Like.findOne({
-            video: videoId,
-            likedBy: req.user?._id
-        });
-    
+
+        const video = await Video.findById(videoId);
+        if (!video) {
+            return res.status(404).send("Video not found");
+        }
+
+        const alreadyLiked = video.likes.includes(req.user?._id);
+
         if (alreadyLiked) {
-            await Like.findByIdAndDelete(alreadyLiked._id)
-    
+            video.likes.pull(req.user._id);  // Unlike
+            await video.save();
             return res.status(200).json({
-                message: " unliked video",
+                message: "Unliked video",
                 isLiked: false
-            })
+            });
         }
-    
-        const like = new Like({
-            video: videoId,
-            likedBy: req.user?._id
-        });
-    
-        if (!like) {
-            return res.status(500).send("failed to like video please try again")
-        }
-    
-        await like.save();
-    
+
+        video.likes.push(req.user._id);  // Like
+        await video.save();
+        
         return res.status(200).json({
-            message: " liked vidoe",
+            message: "Liked video",
             isLiked: true
-        })
+        });
+
     } catch (error) {
-        return res.status(500).send("ERROR likeVideo : " + error)
+        console.log(error);
+        
+        return res.status(500).send("ERROR toggleVideoLike: " + error);
     }
-}
+};
 
 const toggleCommentLike = async (req, res) => {
     try {
-        const {commentId} = req.params;
-    
+        const { commentId } = req.params;
+
         if (!isValidObjectId(commentId)) {
-            return res.status(400).send("Invalid comment id")
+            return res.status(400).send("Invalid comment id");
         }
-    
-        const alreadyLiked = await Like.findOne({
-            comment: commentId,
-            likedBy: req.user?._id
-        })
-    
+
+        const comment = await Comment.findById(commentId);
+        if (!comment) {
+            return res.status(404).send("Comment not found");
+        }
+
+        const alreadyLiked = comment.likes.includes(req.user._id);
+
         if (alreadyLiked) {
-            await Like.findByIdAndDelete(alreadyLiked._id);
-
+            comment.likes.pull(req.user._id);  // Unlike
+            await comment.save();
             return res.status(200).json({
-                message: " unliked comment",
+                message: "Unliked comment",
                 isLiked: false
-            })
+            });
         }
-    
-        const like = new Like({
-            comment: commentId,
-            likedBy: req.user?._id
-        })
-    
-        if (!like) {
-            return res.status(500).send("failed to like comment please try again")
-        }
-    
-        await like.save();
 
+        comment.likes.push(req.user._id);  // Like
+        await comment.save();
+        
         return res.status(200).json({
-            message: " liked comment",
+            message: "Liked comment",
             isLiked: true
-        })
+        });
+
     } catch (error) {
-        return res.status(500).send("ERROR likeComment : " + error)
+        return res.status(500).send("ERROR toggleCommentLike: " + error);
     }
-}
+};
 
 const togglePostLike = async (req, res) => {
     try {
-        const {postId} = req.params;
-    
-        if (!isValidObjectId) {
-            return res.status(400).send("Invalid post id")
+        const { postId } = req.params;
+
+        if (!isValidObjectId(postId)) {
+            return res.status(400).send("Invalid post id");
         }
-    
-        const alreadyLiked = await Like.findOne({
-            post: postId,
-            likedBy: req.user?._id
-        })
-    
+
+        const post = await Post.findById(postId);
+        if (!post) {
+            return res.status(404).send("Post not found");
+        }
+
+        const alreadyLiked = post.likes.includes(req.user._id);
+
         if (alreadyLiked) {
-            await Like.findByIdAndDelete(alreadyLiked._id)
+            post.likes.pull(req.user._id);  // Unlike
+            await post.save();
             return res.status(200).json({
-                message: " unliked post",
+                message: "Unliked post",
                 isLiked: false
-            })
-        }
-    
-        const like = new Like({
-            post: postId,
-            likedBy: req.user?._id
-        })
-    
-        if (!like) {
-            return res.status(500).send("failed to like post please try again") 
+            });
         }
 
-        await like.save();
-
+        post.likes.push(req.user._id);  // Like
+        await post.save();
+        
         return res.status(200).json({
-            message: " liked post",
+            message: "Liked post",
             isLiked: true
-        })
-    } catch (error) {
-        return res.status(500).send("ERROR likePost : " + error)
-    }
-}
+        });
 
-module.exports={toggleVideoLike, toggleCommentLike, togglePostLike}
+    } catch (error) {
+        return res.status(500).send("ERROR togglePostLike: " + error);
+    }
+};
+
+module.exports = { toggleVideoLike, toggleCommentLike, togglePostLike };
