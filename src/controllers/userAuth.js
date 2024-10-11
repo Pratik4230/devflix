@@ -13,7 +13,7 @@ const accessTokenOptions = {
     httpOnly: true,
     secure: false,      
     sameSite: 'lax', 
-    maxAge: 7 * 24 * 60 * 60 * 1000,  
+    expiresIn: "2d"
    
 };
 
@@ -21,7 +21,7 @@ const refreshTokenOptions = {
     httpOnly: true,
     secure: false,      
     sameSite: 'lax',
-    maxAge: 30 * 24 * 60 * 60 * 1000, 
+    expiresIn: "7d"
              
 };
 
@@ -46,7 +46,6 @@ const refreshTokenOptions = {
 
 
 }
-
  const signUpUser =  async (req, res) => {
 try {
    
@@ -98,6 +97,8 @@ const user  = new User({
 
 
 } catch (error) {
+    console.log(error);
+    
        return res.status(500)
        .json({
          message : "Sign Up Error Please try again ",
@@ -139,6 +140,7 @@ const logInUser = async (req, res) => {
         })
        
     } catch (error) {
+console.log(error);
 
         return res.status(500)
                   .json({
@@ -166,9 +168,17 @@ const logoutUser = async (req, res) => {
     
         return res
         .status(200)
-        .clearCookie("accessToken", accessTokenOptions)
-        .clearCookie("refreshToken", refreshTokenOptions)
-        .json("User logged Out")
+        .clearCookie('accessToken', {
+            httpOnly: true,
+            secure: false,
+            sameSite: 'lax'
+          })
+          .clearCookie('refreshToken', {
+            httpOnly: true,
+            secure: false,
+            sameSite: 'lax'
+          })
+          .json("User logged Out")
     
     } catch (error) {
         return res.status(500).json({

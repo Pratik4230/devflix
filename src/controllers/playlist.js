@@ -46,9 +46,7 @@ const createPlaylist = async(req,res) => {
         const {name, description} = req.body;
         const {playlistId} = req.params;
     
-        if (!name) {
-            return res.status(400).send("Name is required")
-        }
+        
     
         if (!isValidObjectId(playlistId)) {
             return res.status(400).send("Invalid Playlist id ")
@@ -64,10 +62,13 @@ const createPlaylist = async(req,res) => {
             return res.status(401).send("only owner can edit playlist")
         }
     
-        const updateFields = {name,};
+        const updateFields = {};
     
         if (description) {
             updateFields.description = description;
+        }
+        if (name) {
+            updateFields.name = name;
         }
     
         const updatedPlaylist = await Playlist.findByIdAndUpdate(

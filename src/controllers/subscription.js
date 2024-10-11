@@ -17,6 +17,10 @@ const toggleSubscription = async (req,res) => {
             return res.status(404).json({ message: "Channel  not found" });
         }
     
+        
+        if (channelId.toString() === req.user?._id.toString()) {
+            return res.status(400).json({ message: "You cannot subscribe to yourself" });
+        }
     
         const subscribed = await Subscription.findOne({
             subscriber: req.user?._id,
