@@ -57,4 +57,94 @@ const toggleSubscription = async (req,res) => {
     }
 }
 
-module.exports={toggleSubscription}
+const getUserChannelSubscribers = async (req, res) => {
+    try {
+        const userId = req.user._id;  
+ 
+        const subscribers = await Subscription.aggregate(
+            [
+                {
+                  $match: { channel: userId }
+                },
+              
+                 {
+                      $lookup: {
+                        from: "users", 
+                        localField: "subscriber",
+                        foreignField: "_id", 
+                        as: "subscriberDetails",
+                      },
+                    },
+                    {
+                      $unwind: "$subscriberDetails", 
+                    },
+                    {
+                      $project: {
+                        _id: "$subscriberDetails._id", 
+                        channelName: "$subscriberDetails.channelName",
+                        avatarImage: "$subscriberDetails.avatarImage.url",
+                      },
+                    },
+                ]
+    );
+
+    if (!subscribers.length) {
+        return res.status(404).json({ message: "No subscribers found" });
+      }
+  
+      return res.status(200).json(subscribers);
+
+    } catch (error) {
+      console.error("Error fetching channel subscribers: ", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+}
+
+const getSubscribedChannels  = async (req, res) => {
+    try {
+        const userId = req.user._id;  
+ 
+        const subscribedChannels = await Subscription.aggregate(
+            [
+                {
+                  $match: { subscriber: userId }
+                },
+              
+                 {
+                      $lookup: {
+                        from: "users", 
+                        localField: "channel",
+                        foreignField: "_id", 
+                        as: "channels",
+                      },
+                    },
+                    {
+                      $unwind: "$channels", 
+                    },
+                    {
+                      $project: {
+                        _id: "$channels._id", 
+                        channelName: "$channels.channelName",
+                        avatarImage: "$channels.avatarImage.url",
+                      },
+                    },
+                ]
+    );
+
+    if (! subscribedChannels.length) {
+        return res.status(404).json({ message: "No subscribed channel found" });
+      }
+  
+      return res.status(200).json( subscribedChannels);
+
+    } catch (error) {
+      console.error("Error fetching subscribed channels: ", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+
+
+}
+
+
+
+module.exports={toggleSubscription, getUserChannelSubscribers, getSubscribedChannels}

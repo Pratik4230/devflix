@@ -217,4 +217,30 @@ const createPlaylist = async(req,res) => {
  }
 
 
- module.exports={createPlaylist , updatePlaylist, deletePlaylist, addVideoInPlaylist, removeVideoFromPlaylist}
+const getUserPlaylists = async (req, res) => {
+    try {
+      const userId = req.user._id; 
+  
+      const playlists = await Playlist.find({ owner: userId })
+        .populate({
+          path: "videos",
+          select: "video.url thumbnail.url title description views duration owner", 
+          
+        })
+        .populate("owner", "channelName avatarImage.url"); 
+  
+      
+      if (playlists.length === 0) {
+        return res.status(404).json({ message: "you can create you own playlist" });
+      }
+  
+      
+      return res.status(200).json(playlists);
+    } catch (error) {
+      console.error("Error fetching user playlists: ", error);
+      return res.status(500).json({ message: "Server error" });
+    }
+  };
+
+
+ module.exports={createPlaylist , updatePlaylist, deletePlaylist, addVideoInPlaylist, removeVideoFromPlaylist, getUserPlaylists}

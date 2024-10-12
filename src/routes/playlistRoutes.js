@@ -3,12 +3,15 @@ const router = express.Router();
 
 const {authUser} = require("../middlewares/authCheck")
 
-const {createPlaylist, updatePlaylist, deletePlaylist, addVideoInPlaylist, removeVideoFromPlaylist} = require("../controllers/playlist")
+const {createPlaylist, updatePlaylist, deletePlaylist, addVideoInPlaylist, removeVideoFromPlaylist, getUserPlaylists} = require("../controllers/playlist")
 
-router.route("/create").post(authUser, createPlaylist)
-router.route("/update/:playlistId").patch(authUser, updatePlaylist)
-router.route("/delete/:playlistId").delete(authUser, deletePlaylist)
-router.route("/addvideo/:playlistId/:videoId").post(authUser, addVideoInPlaylist)
-router.route("/removevideo/:playlistId/:videoId").post(authUser, removeVideoFromPlaylist)
+
+router.use(authUser)
+router.route("/create").post(createPlaylist)
+router.route("/update/:playlistId").patch(updatePlaylist)
+router.route("/delete/:playlistId").delete(deletePlaylist)
+router.route("/addvideo/:playlistId/:videoId").post(addVideoInPlaylist)
+router.route("/removevideo/:playlistId/:videoId").post(removeVideoFromPlaylist)
+router.route("/myplaylists").get(getUserPlaylists)
 
 module.exports=router

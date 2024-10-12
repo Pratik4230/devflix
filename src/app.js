@@ -4,7 +4,7 @@ const cookieParser = require("cookie-parser");
 
 const app = express();
 
-// Middleware setup
+
 app.use(cors({
     origin: process.env.CORS_ORIGIN,
     credentials: true,
@@ -14,7 +14,7 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(express.static("public"));
 app.use(cookieParser());
 
-// Importing Routers
+
 const userRouter = require("./routes/userRoutes");
 const postRouter = require("./routes/postRoutes");
 const videoRouter = require("./routes/videoRoutes");
@@ -23,7 +23,7 @@ const likeRouter = require("./routes/likeRoutes");
 const playlistRouter = require("./routes/playlistRoutes");
 const subscriptionRouter = require("./routes/subscriptionRoutes");
 
-// Route usage
+
 app.use("/user", userRouter);
 app.use("/post", postRouter);
 app.use("/video", videoRouter);

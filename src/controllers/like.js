@@ -116,4 +116,24 @@ const togglePostLike = async (req, res) => {
     }
 };
 
-module.exports = { toggleVideoLike, toggleCommentLike, togglePostLike };
+const getLikedVideos = async (req, res) => {
+    try {
+        const userId = req.user._id; 
+    
+        const likedVideos = await Video.find({ likes: userId })
+        .populate("owner", "channelName avatarImage.url") 
+        .select("video.url thumbnail.url title description views duration createdAt"); 
+    
+        
+        if (likedVideos.length === 0) {
+          return res.status(404).json({ message: "No liked videos found" });
+        }
+
+        return res.status(200).json(likedVideos);
+      } catch (error) {
+       
+        return res.status(500).json({ message: "Server error" });
+      }
+}
+
+module.exports = { toggleVideoLike, toggleCommentLike, togglePostLike, getLikedVideos };
