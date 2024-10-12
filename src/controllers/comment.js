@@ -1,6 +1,7 @@
 const { isValidObjectId } = require("mongoose");
 const { Comment } = require("../models/commentModel");
 const { Video } = require("../models/videoModel");
+const mongoose = require("mongoose");
 
 
 
@@ -120,80 +121,70 @@ const deleteComment = async (req, res) => {
     }
 }
 
-// const getVideoComments = async (req, res) => {
-//     const {videoId} = req.params;
-//     try {
-//         if (!isValidObjectId(videoId)) {
-//             return res.status(400).send("Invalid video id")
-//         }
-//         const video = await Video.findById(videoId);
-//         if (!video) {
-//             return res.status(404).send("video not found")
-//         }
-//         const comments = Comment.aggregate([
-//             {
-//               $match: {
-//                 video: new mongoose.Types.ObjectId(videoId)  // Match the specific video ID
-//               }
-//             },
-//             {
-//               $lookup: {
-//                 from: 'users',
-//                 localField: 'owner',
-//                 foreignField: '_id',
-//                 as: 'owner'
-//               }
-//             },
-//             {
-//               $lookup: {
-//                 from: 'likes',
-//                 localField: '_id',
-//                 foreignField: 'comment',
-//                 as: 'likes'
-//               }
-//             },
-//             {
-//               $addFields: {
-//                 likesCount: { '$size': '$likes' },  // Calculate the number of likes
-//                 owner: { '$first': '$owner' },  // Get the first user from the owner lookup
-//                 isLiked: {
-//                   $cond: {
-//                     if: { '$gt': [{ '$size': '$likes' }, 0] },  // Check if there are any likes
-//                     then: {
-//                       $in: [new mongoose.Types.ObjectId(userId), '$likes.likedBy']  // Check if the current user has liked this comment
-//                     },
-//                     else: false
-//                   }
-//                 }
-//               }
-//             },
-//             {
-//               $sort: {
-//                 createdAt: -1  
-//               }
-//             },
-//             {
-//               $project: {
-//                 content: 1,
-//                 createdAt: 1,
-//                 likesCount: 1,
-//                 owner: {
-//                   channelName: 1,
-//                   userName: 1,
-//                   avatarImage: 1
-//                 },
-//                 isLiked: 1 
-//               }
-//             }
-//           ])
-          
-//         return res.status(200).json({
-//             message: "comments fetched successfully",
-//             comments
-//         })
-//     } catch (error) {
-//         return res.status(500).send("Error while fetching comments " + error)
-//     }
-// }
 
-module.exports={addComment, updateComment, deleteComment}
+const getVideoComments = async (req, res) => {
+  try {
+    const { videoId } = req.params;
+
+    const comments = await Video.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(videoId),
+        },
+      },
+      {
+        $lookup: {
+          from: "comments",
+          localField: "_id",
+          foreignField: "video",
+          as: "comments",
+        },
+      },
+      {
+        $unwind: {
+          path: "$comments",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "comments.owner",
+          foreignField: "_id",
+          as: "commentor",
+        },
+      },
+      {
+        $addFields: {
+          commentorChannelName: { $first: "$commentor.channelName" },
+          commentorAvatar: { $first: "$commentor.avatarImage.url" },
+          commentContent: "$comments.content",
+          commentCreatedAt: "$comments.createdAt",
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          content: "$commentContent",
+          channelName: "$commentorChannelName",
+          avatar: "$commentorAvatar",
+          createdAt: "$commentCreatedAt",
+        },
+      },
+    ]);
+
+   
+    if (!comments || comments.length === 0) {
+      return res.status(404).json({ message: "No comments found for this video" });
+    }
+
+    return res.status(200).json(comments);
+  } catch (error) {
+    console.error("Error fetching video comments: ", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+
+module.exports={addComment, updateComment, deleteComment, getVideoComments}
