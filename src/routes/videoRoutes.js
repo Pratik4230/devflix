@@ -1,7 +1,8 @@
 const express = require("express");
-const { uploadVideo, updateVideo, deleteVideo, toggleVideoPublish } = require("../controllers/video");
+const { uploadVideo, updateVideo, deleteVideo, toggleVideoPublish ,  getVideoById , getVideosByChannel } = require("../controllers/video");
 const { authUser } = require("../middlewares/authCheck");
 const { upload } = require("../middlewares/multer");
+
 
 const router = express.Router();
 
@@ -22,5 +23,7 @@ router.route("/update/:videoId").patch(
 
 router.route("/delete/:videoId").delete(authUser, deleteVideo);
 router.route("/togglepublish/:videoId").patch(authUser, toggleVideoPublish);
+router.route("/:videoId").get(authUser, getVideoById);
+router.route("/vids/:channelId").get(authUser, getVideosByChannel);
 
 module.exports = router;

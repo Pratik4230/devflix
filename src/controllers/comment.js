@@ -129,7 +129,7 @@ const getVideoComments = async (req, res) => {
     const comments = await Video.aggregate([
       {
         $match: {
-          _id: new mongoose.Types.ObjectId(videoId),
+          _id:  new mongoose.Types.ObjectId(videoId),
         },
       },
       {

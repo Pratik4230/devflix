@@ -4,7 +4,7 @@ const router = express.Router();
 
 
 const { 
-    signUpUser, logInUser,logoutUser,renewAccess, getProfile , updatePassword, updateAvatarImage, updateCoverImage, getUserChannel , getWatchHistory
+    signUpUser, logInUser,logoutUser,renewAccess, getProfile , updatePassword, updateAvatarImage, updateCoverImage, getChannel , getWatchHistory
 } = require("../controllers/userAuth.js");
 
 const {upload}  = require("../middlewares/multer.js")
@@ -22,8 +22,8 @@ router.route("/profile" ).get(authUser, getProfile)
 router.route("/updateavatarimage" ).patch(authUser, upload.single("avatar"), updateAvatarImage)
 router.route("/updatecoverimage").patch(authUser, upload.single("coverImage"), updateCoverImage)
 
-router.route("/:channelName").get(authUser , getUserChannel )
-router.route("/watchhistory").get(authUser , getWatchHistory)
+router.route("/:channelId").get(authUser , getChannel )
+router.route("/watch/history").get(authUser , getWatchHistory)
 
 
 

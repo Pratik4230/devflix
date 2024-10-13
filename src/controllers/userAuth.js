@@ -5,7 +5,8 @@ const {User} = require("../models/userModel");
 
 const jwt = require("jsonwebtoken");
 
-const {cloudinaryUpload} = require("../utils/cloudinary")
+const {cloudinaryUpload} = require("../utils/cloudinary");
+const { default: mongoose } = require("mongoose");
 const cloudinary = require('cloudinary').v2;
 
 
@@ -46,6 +47,8 @@ const refreshTokenOptions = {
 
 
 }
+
+
  const signUpUser =  async (req, res) => {
 try {
    
@@ -406,18 +409,19 @@ const updateCoverImage =  async (req, res) => {
 }
 
 
-const getUserChannel = async(req, res) => {
-    const {channelName} = req.params
+const getChannel = async(req, res) => {
+    const {channelId} = req.params
 
-    if (!username?.trim()) {
-       return res.status(400).send("username is missing")
+    if (!channelId) {
+       return res.status(400).send("channelid is missing")
     }
+
 try {
     
         const channel = await User.aggregate([
             {
                 $match: {
-                    channelName: channelName.toLowerCase()
+                    _id: new mongoose.Types.ObjectId(channelId)
                 }
             },
             {
@@ -477,7 +481,7 @@ try {
             data: channel[0]
         })
 } catch (error) {
-    return res.status(500).send("something went wrong" , error)
+    return res.status(500).send("server error getChannel")
 }
     
 }
@@ -486,10 +490,12 @@ try {
 
 const getWatchHistory = async(req, res) => {
     try {
+
+      const userId = req.user.user_id;
         const user = await User.aggregate([
             {
                 $match: {
-                    _id: new mongoose.Types.ObjectId(req.user._id)
+                    _id: new mongoose.Types.ObjectId(userId)
                 }
             },
             {
@@ -526,7 +532,11 @@ const getWatchHistory = async(req, res) => {
                     ]
                 }
             }
-        ])
+        ]);
+
+        if(!user || user.length == 0) {
+            return res.status(404).send("no watch history ")
+        }
     
         return res.status(200).json({
             message: "Success",
@@ -534,11 +544,12 @@ const getWatchHistory = async(req, res) => {
         }
         )
     } catch (error) {
-        return res.status(500).send("something went wrong :" + error
-        )
+      console.log(error);
+      
+        return res.status(500).send("server error watch history")
     }
     
 }
 
 
-module.exports={signUpUser, logInUser,logoutUser,renewAccess, getProfile , updatePassword, updateAvatarImage, updateCoverImage, getUserChannel , getWatchHistory};
+module.exports={signUpUser, logInUser,logoutUser,renewAccess, getProfile , updatePassword, updateAvatarImage, updateCoverImage, getChannel , getWatchHistory};

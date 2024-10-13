@@ -1,11 +1,13 @@
 const express = require("express");
-const { createPost, updatePost, deletePost } = require("../controllers/post");
+const { createPost, updatePost, deletePost, getChannelPosts } = require("../controllers/post");
 const { authUser } = require("../middlewares/authCheck");
 
 const router = express.Router();
 
-router.route("/create").post(authUser, createPost);
-router.route("/update/:postId").patch(authUser, updatePost);
-router.route("/delete/:postId").delete(authUser, deletePost);
+router.use(authUser)
+router.route("/create").post(createPost);
+router.route("/update/:postId").patch(updatePost);
+router.route("/delete/:postId").delete(deletePost);
+router.route("/:channelId").get(getChannelPosts);
 
 module.exports = router;

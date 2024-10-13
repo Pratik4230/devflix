@@ -1,3 +1,4 @@
+const {mongoose } = require("mongoose");
 const { Post } = require("../models/postModel");
 
 const createPost = async (req, res) => {
@@ -103,4 +104,54 @@ const deletePost = async (req, res) => {
   }
 };
 
-module.exports = {createPost , updatePost , deletePost}
+const getChannelPosts = async (req, res) => {
+  try {
+    const channelId = req.params.channelId;
+
+    const posts = await Post.aggregate([
+        {
+          $match: {
+           owner: new mongoose.Types.ObjectId(channelId), 
+          }
+          },
+        {
+          $lookup: {
+            from: "users", 
+            localField: "owner",
+            foreignField: "_id",
+            as: "ownerDetails",
+          },
+        },
+        { $unwind: "$ownerDetails" }, 
+        {
+          $addFields: {
+            likes: { $ifNull: ["$likes", []] }, 
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            content: 1, 
+            createdAt: 1,
+            "ownerDetails.channelName": 1, 
+            "ownerDetails.avatarImage.url": 1, 
+            likes: { $size: "$likes" },
+           
+          }
+        }
+      
+    ]);
+
+    if (posts.length === 0) {
+      return res.status(404).json({ message: "No posts found for this channel" });
+    }
+
+    res.status(200).json(posts);
+
+  } catch (error) {
+    console.error("Error fetching channel posts: ", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+
+module.exports = {createPost , updatePost , deletePost, getChannelPosts}
