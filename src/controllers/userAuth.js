@@ -62,7 +62,14 @@ try {
         emailId: emailId
     });
     if (existingUser) {
-        return res.status(100).send("User already created" )
+        return res.status(400).json({message :"User already created" })
+    }
+
+   const existingChannel = await User.findOne({
+        channelName: channelName
+    });
+    if (existingChannel) {
+        return res.status(400).json({message :"Channel Name already exists " })
     }
     
     
@@ -81,7 +88,7 @@ const user  = new User({
   const createdUser = await User.findOne({emailId: emailId});
 
   if (!createdUser) {
-    return res.status(404).send("somehting went wrong please try again")
+    return res.status(404).jsom({message:"somehting went wrong please try again"})
   }
 
   const {accessToken , refreshToken} = await createAccessTokenAndRefreshToken(createdUser._id);
@@ -119,13 +126,13 @@ const logInUser = async (req, res) => {
        const user = await User.findOne({emailId: emailId});
 
        if (!user) {
-        return res.status(404).send("User doen't exist");
+        return res.status(404).json({message: "User doen't exist"});
        };
 
      const isPasswordValid = await user.getPasswordValid(password);
 
      if (!isPasswordValid) {
-        return res.status(401).send("Invalid credentials")
+        return res.status(401).json({message: "Invalid credentials"})
      }
 
         const {accessToken , refreshToken} = await createAccessTokenAndRefreshToken(user._id);
@@ -238,7 +245,7 @@ const getProfile = async(req, res) => {
 
 
    if (!user) {
-    return res.status(401).send("Login first")
+    return res.status(401).json({message: "Login first"})
    }
 
    try {

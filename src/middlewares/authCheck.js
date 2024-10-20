@@ -1,12 +1,14 @@
 const jwt = require("jsonwebtoken");
 const {User} = require("../models/userModel")
+
+
 const authUser = async (req, res, next) => {
     try {
 
      const accessToken  = req.cookies?.accessToken;
 
      if (!accessToken ) {
-        return res.status(401).send("Log in first !!!")
+        return res.status(401).json({message: "Log in first !!!"})
      }
 
      const decodedData = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
@@ -16,14 +18,14 @@ const authUser = async (req, res, next) => {
     const user = await User.findById(loggedInUser);
 
     if (!user) {
-        return res.status(401).send("Invalid Access Token")
+        return res.status(401).json({message: "Invalid Access Token"})
     }
      
 req.user = user;
 next()
         
     } catch (error) {
-        res.send("ERROR : " + error);
+        res.json({error});
     }
    
 }

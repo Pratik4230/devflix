@@ -324,4 +324,63 @@ const getVideosByChannel = async (req,res) => {
     res.status(500).json({ message: "Server error" });
     }
 }
-module.exports={uploadVideo, updateVideo, deleteVideo, toggleVideoPublish, getVideoById, getVideosByChannel}
+
+const getFeed = async (req, res) => {
+    try {
+      const page = parseInt(req.query.page) || 1; 
+      const limit = parseInt(req.query.limit) || 15; 
+      const skip = (page - 1) * limit;
+  
+      const videos = await Video.aggregate([
+        {
+          $lookup: {
+            from: "users",
+            localField: "owner",
+            foreignField: "_id",
+            as: "ownerDetails"
+          }
+        },
+        {
+          $unwind: "$ownerDetails"
+        },
+        {
+          $project: {
+            "video.url": 1,
+            "thumbnail.url": 1,
+            title: 1,
+            description: 1,
+            views: 1,
+            duration: 1,
+            "ownerDetails.channelName": 1,
+            "ownerDetails.avatarImage.url": 1,
+            createdAt: 1
+          }
+        },
+        {
+          $sort: { createdAt: -1 } 
+        },
+        {
+          $skip: skip 
+        },
+        {
+          $limit: limit 
+        }
+      ]);
+  
+      const totalVideos = await Video.countDocuments(); // Total number of videos for pagination metadata
+      const totalPages = Math.ceil(totalVideos / limit);
+  
+      res.status(200).json({
+        videos,
+        currentPage: page,
+        totalPages,
+        totalVideos
+      });
+    } catch (error) {
+        console.log(error);
+        
+      res.status(500).json({ message: "Server hii Error", error });
+    }
+  };
+  
+module.exports={uploadVideo, updateVideo, deleteVideo, toggleVideoPublish, getVideoById, getVideosByChannel, getFeed}
