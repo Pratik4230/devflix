@@ -51,7 +51,7 @@ try {
     }
     
       if (!content) {
-        return res.status(400).send("Content is required")
+        return res.status(400).json({message: "Content is required"})
       }
        
       const comment = await Comment.findById(commentId);
@@ -61,7 +61,7 @@ try {
       }
      
       if (comment.owner?.toString() !== req.user?._id.toString()) {
-        return res.status(401).send("you can't edit someone else comment")
+        return res.status(401).json({message : "only owner can update comment"})
       }
     
       const updatedComment = await Comment.findByIdAndUpdate(
@@ -103,7 +103,7 @@ const deleteComment = async (req, res) => {
         }
     
         if (comment.owner?.toString() !== req.user?._id.toString()) {
-            return res.status(401).send("only owner can delete this comment")
+            return res.status(401).json({message: "only owner can delete this comment"})
         }
     
         const deletedComment = await Comment.findByIdAndDelete(commentId);
@@ -160,11 +160,13 @@ const getVideoComments = async (req, res) => {
           commentorAvatar: { $first: "$commentor.avatarImage.url" },
           commentContent: "$comments.content",
           commentCreatedAt: "$comments.createdAt",
+          key: "$comments._id"
         },
       },
       {
         $project: {
-          _id: 0,
+        _id: 0,
+          key: 1,
           content: "$commentContent",
           channelName: "$commentorChannelName",
           avatar: "$commentorAvatar",

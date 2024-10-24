@@ -2,7 +2,8 @@
 const { isValidObjectId } = require("mongoose");
 const { Video } = require("../models/videoModel");
 const { cloudinaryUpload, cloudinaryDelete } = require("../utils/cloudinary");
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
+const { Subscription } = require("../models/subscriptionModel");
 
 
 const uploadVideo = async(req, res) => {
@@ -227,6 +228,7 @@ const toggleVideoPublish = async (req,res) => {
 const getVideoById = async (req,res) => {
     try {
         const videoId = req.params.videoId;
+        const userId = req.user._id;
 
         const video = await Video.aggregate([
             
@@ -257,6 +259,7 @@ const getVideoById = async (req,res) => {
                     views: 1, 
                     duration: 1, 
                     createdAt: 1, 
+                    channelId: "$ownerDetails._id",
                     owner: "$ownerDetails.channelName",
                     ownerAvatar:"$ownerDetails.avatarImage.url",
                     likes: { $size: "$likes" }, 
@@ -269,7 +272,17 @@ const getVideoById = async (req,res) => {
             return res.status(404).json({ message: "Video not found" });
         }
 
-        res.status(200).json(video[0]);
+        const isSubscribed  = await Subscription.exists({
+          subscriber: userId,
+          channel: video[0].channelId,
+        });
+
+        const videoWithSubscription = {
+          ...video[0],
+          isSubscribed: !!isSubscribed, 
+        };
+
+        res.status(200).json(videoWithSubscription);
 
     } catch (error) {
             console.error("Error fetching video by ID: ", error);
@@ -297,18 +310,20 @@ const getVideosByChannel = async (req,res) => {
                   },
                 },
                 { $unwind: "$ownerDetails" }, 
-          
+    
                 {
                   $project: {
                     _id: 1,
-                    thumbnail:"$thumbnail.url", 
+                    "thumbnail.url": 1, 
                     title: 1, 
                     views: 1, 
                    duration: 1, 
                     createdAt: 1, 
-               
+                    "ownerDetails.channelName": 1,
+                    "ownerDetails.avatarImage.url": 1,
                   },
                 },
+
               
         ])
 

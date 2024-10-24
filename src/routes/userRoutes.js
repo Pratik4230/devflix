@@ -24,7 +24,7 @@ router.route("/profile" ).get(authUser, getProfile)
 router.route("/updateavatarimage" ).patch(authUser, upload.single("avatar"), updateAvatarImage)
 router.route("/updatecoverimage").patch(authUser, upload.single("coverImage"), updateCoverImage)
 
-router.route("/:channelId").get(authUser , getChannel )
+router.route("/channel/:channelId").get(authUser , getChannel )
 router.route("/watch/history").get(authUser , getWatchHistory)
 
 

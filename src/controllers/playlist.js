@@ -1,4 +1,4 @@
-const { isValidObjectId } = require("mongoose");
+const { isValidObjectId, default: mongoose } = require("mongoose");
 const { Playlist } = require("../models/playlistModel");
 const { Video } = require("../models/videoModel");
 
@@ -217,14 +217,14 @@ const createPlaylist = async(req,res) => {
  }
 
 
-const getUserPlaylists = async (req, res) => {
+const getPlaylists = async (req, res) => {
     try {
-      const userId = req.user._id; 
+      const channelId = req?.params?.channelId;
   
-      const playlists = await Playlist.find({ owner: userId })
+      const playlists = await Playlist.find({ owner: channelId })
         .populate({
           path: "videos",
-          select: "video.url thumbnail.url title description views duration owner", 
+          select: "video.url thumbnail.url title description views duration owner _id", 
           
         })
         .populate("owner", "channelName avatarImage.url"); 
@@ -242,5 +242,103 @@ const getUserPlaylists = async (req, res) => {
     }
   };
 
+  const getPlaylistById = async (req, res) => {
 
- module.exports={createPlaylist , updatePlaylist, deletePlaylist, addVideoInPlaylist, removeVideoFromPlaylist, getUserPlaylists}
+    const {playlistId} = req?.params;
+try {
+    if (!isValidObjectId(playlistId)) {
+        return res.status(400).send("invalid playlist id")
+    };
+
+    const playlist = await Playlist.aggregate(
+        [
+            {
+              $match: {
+                _id: new mongoose.Types.ObjectId(playlistId),
+              },
+            },
+            {
+              $lookup: {
+                from: "videos",
+                localField: "videos",
+                foreignField: "_id",
+                as: "videoDetails",
+              },
+            },
+            {
+              $unwind: {
+                path: "$videoDetails",
+              },
+            },
+            {
+              $lookup: {
+                from: "users",
+                localField: "videoDetails.owner",
+                foreignField: "_id",
+                as: "ownerDetails",
+              },
+            },
+            {
+              $unwind: {
+                path: "$ownerDetails",
+              },
+            },
+            {
+              $group: {
+                _id: "$_id",
+                playlistName: { $first: "$name" },
+                playlistDescription: { $first: "$description" },
+                playlistCreatedAt: { $first: "$createdAt" },
+                videos: {
+                  $push: {
+                    _id: "$videoDetails._id",
+                    title: "$videoDetails.title",
+                    duration: "$videoDetails.duration",
+                    views: "$videoDetails.views",
+                    description: "$videoDetails.description",
+                    thumbnail: "$videoDetails.thumbnail",
+                    ownerDetails: {
+                      channelName: "$ownerDetails.channelName",
+                      avatarImage: "$ownerDetails.avatarImage",
+                    },
+                  },
+                },
+              },
+            },
+            {
+              $project: {
+                _id: 0,
+                playlistData: {
+                  name: "$playlistName",
+                  description: "$playlistDescription",
+                  createdAt: "$playlistCreatedAt",
+                },
+                videoData: "$videos",
+              },
+            },
+          ]
+          
+    )      
+    
+
+    if (!playlist) {
+        return res.status(404).json({message: "playlist not found"})
+    }
+
+    
+
+
+    return res.status(200).json({
+        message: "playlist fetched succefully",
+        data: playlist
+    })
+
+} catch (error) {
+    console.log(error);
+    return res.status(500).json({message: "something went wrong while fetching playlist"})
+    
+}
+   
+  }
+
+ module.exports={createPlaylist , updatePlaylist, deletePlaylist, addVideoInPlaylist, removeVideoFromPlaylist, getPlaylists, getPlaylistById}

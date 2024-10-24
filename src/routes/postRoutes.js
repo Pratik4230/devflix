@@ -8,6 +8,6 @@ router.use(authUser)
 router.route("/create").post(createPost);
 router.route("/update/:postId").patch(updatePost);
 router.route("/delete/:postId").delete(deletePost);
-router.route("/:channelId").get(getChannelPosts);
+router.route("/channel/:channelId").get(getChannelPosts);
 
 module.exports = router;
