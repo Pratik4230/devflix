@@ -147,6 +147,10 @@ const createPlaylist = async(req,res) => {
         if (!video) {
             return res.status(404).send("video not found")
         }
+
+        if (playlist.videos.includes(videoId)) {
+          return res.status(400).send("Video is already in the playlist");
+      }
     
         if (playlist.owner?.toString() && video.owner?.toString() !== req.user?._id.toString()) {
             return res.status(401).send("only owner can add video in the playlist")
@@ -194,7 +198,12 @@ const createPlaylist = async(req,res) => {
         }
     
         if (playlist.owner?.toString() && video.owner?.toString() !== req.user?._id.toString()) {
-            return res.status(401).send("only owner can add video in the playlist")
+            return res.status(401).send("only owner can remove video from the playlist")
+        }
+
+        const isVideoInPlaylist = playlist.videos.includes(videoId);
+        if (!isVideoInPlaylist) {
+            return res.status(400).send("Video is not present in the playlist");
         }
     
         const updatedPlaylist = await Playlist.findByIdAndUpdate(
@@ -204,11 +213,11 @@ const createPlaylist = async(req,res) => {
         )
     
         if (!updatedPlaylist) {
-           return res.status(500).send("failed to add video in playlist Please try Again") 
+           return res.status(500).send("failed to remove video from the playlist Please try Again") 
         }
     
         return res.status(200).json({
-            message: "video added in playlist successfully",
+            message: "video removed from playlist successfully",
             updatedPlaylist
         })
     } catch (error) {
@@ -307,7 +316,7 @@ try {
             },
             {
               $project: {
-                _id: 0,
+                _id: 1,
                 playlistData: {
                   name: "$playlistName",
                   description: "$playlistDescription",
@@ -326,6 +335,7 @@ try {
     }
 
     
+    
 
 
     return res.status(200).json({
@@ -334,7 +344,7 @@ try {
     })
 
 } catch (error) {
-    console.log(error);
+    console.log(error.message);
     return res.status(500).json({message: "something went wrong while fetching playlist"})
     
 }
