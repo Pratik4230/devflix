@@ -225,31 +225,27 @@ const createPlaylist = async(req,res) => {
     }
  }
 
+ const getPlaylists = async (req, res) => {
+  try {
+    const channelId = req?.params?.channelId;
+    const playlists = await Playlist.find({ owner: channelId })
+      .populate({
+        path: "videos",
+        select: "video.url thumbnail.url title description views duration owner _id",
+      })
+      .populate("owner", "channelName avatarImage.url");
 
-const getPlaylists = async (req, res) => {
-    try {
-      const channelId = req?.params?.channelId;
-  
-      const playlists = await Playlist.find({ owner: channelId })
-        .populate({
-          path: "videos",
-          select: "video.url thumbnail.url title description views duration owner _id", 
-          
-        })
-        .populate("owner", "channelName avatarImage.url"); 
-  
-      
-      if (playlists.length === 0) {
-        return res.status(404).json({ message: "you can create you own playlist" });
-      }
-  
-      
-      return res.status(200).json(playlists);
-    } catch (error) {
-      console.error("Error fetching user playlists: ", error);
-      return res.status(500).json({ message: "Server error" });
+    if (!playlists) {
+      return res.status(201).json({ message: "No playlist found" });
     }
-  };
+
+    return res.status(200).json({ data: playlists });
+  } catch (error) {
+    console.error("Error fetching playlists:", error.message);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
 
   const getPlaylistById = async (req, res) => {
 

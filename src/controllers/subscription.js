@@ -1,6 +1,7 @@
 const mongoose = require("mongoose")
 const { Subscription } = require("../models/subscriptionModel");
 const {User} = require("../models/userModel")
+const {Video} = require('../models/videoModel')
 
 
 const toggleSubscription = async (req,res) => {
@@ -146,5 +147,67 @@ const getSubscribedChannels  = async (req, res) => {
 }
 
 
+const getSubsVideos = async (req, res) => {
+  try {
+      const userId = req.user._id; 
 
-module.exports={toggleSubscription, getUserChannelSubscribers, getSubscribedChannels}
+      // Step 1: Find channels the user is subscribed to
+      const subscriptions = await Subscription.find({ subscriber: userId }).populate('channel');
+
+      // Extract channel IDs from the subscriptions
+      const channelIds = subscriptions.map(sub => sub.channel._id);
+
+      if (channelIds.length === 0) {
+          return res.status(404).json({ message: "No subscriptions found" });
+      }
+
+      // Step 2: Fetch random videos from those subscribed channels
+      const videos = await Video.aggregate([
+          {
+              $match: {
+                  owner: { $in: channelIds }, // Match videos from subscribed channels
+                  isPublished: true, // Only published videos
+              }
+          },
+          {
+              $sample: { size: 10 } // Randomly sample 10 videos (you can adjust this number)
+          },
+          {
+              $lookup: {
+                  from: "users", // Assuming the users collection is named 'users'
+                  localField: "owner",
+                  foreignField: "_id",
+                  as: "ownerDetails"
+              }
+          },
+          {
+              $unwind: "$ownerDetails" // Unwind to get owner details
+          },
+          {
+              $project: {
+                
+                  title: 1,
+                  description: 1,
+                  thumbnail: 1,
+                  views: 1,
+                  duration: 1,
+                  "ownerDetails.channelName": 1,
+                  "ownerDetails.avatarImage.url": 1,
+                  createdAt: 1
+              }
+          }
+      ]);
+     
+      return res.status(200).json({
+        message: "yes",
+         videos
+         });
+  } catch (error) {
+      console.error(error);
+      return res.status(500).json({ message: "Internal server error", error });
+  }
+};
+
+
+
+module.exports={toggleSubscription, getUserChannelSubscribers, getSubscribedChannels, getSubsVideos}
