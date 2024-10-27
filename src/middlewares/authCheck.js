@@ -6,9 +6,11 @@ const authUser = async (req, res, next) => {
     try {
 
      const accessToken  = req.cookies?.accessToken;
+     console.log("backend authcheck ", accessToken);
+     
 
      if (!accessToken ) {
-        return res.status(401).json({message: "Log in first !!!"})
+        return res.status(401).json({message: "Log in first authcheck !!!"})
      }
 
      const decodedData = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);

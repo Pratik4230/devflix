@@ -6,7 +6,7 @@ const {User} = require("../models/userModel");
 const jwt = require("jsonwebtoken");
 
 const {cloudinaryUpload} = require("../utils/cloudinary");
-const { default: mongoose } = require("mongoose");
+const {  mongoose } = require("mongoose");
 const cloudinary = require('cloudinary').v2;
 
 
@@ -240,13 +240,13 @@ const renewAccess = async (req, res) => {
 
 const getProfile = async(req, res) => {
    const user = req.user;
-
+   try {
 
    if (!user) {
-    return res.status(401).json({message: "Login first"})
+    return res.status(401).json({message: "b Login first get profile"})
    }
 
-   try {
+  
     const profile = user.toObject();
  
     const removeKeys = ["refreshToken", "password" ];
