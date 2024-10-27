@@ -6,7 +6,7 @@ const authUser = async (req, res, next) => {
     try {
 
      const accessToken  = req.cookies?.accessToken;
-     console.log("backend authcheck ", accessToken);
+     
      
 
      if (!accessToken ) {

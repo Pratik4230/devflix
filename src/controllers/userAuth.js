@@ -13,15 +13,15 @@ const cloudinary = require('cloudinary').v2;
 const accessTokenOptions = {
     httpOnly: true,
     secure: true,      
-    sameSite: 'lax', 
-    expiresIn: "2d"
+    sameSite: 'None', 
+    maxAge: 60 * 60 * 24 * 7,
 };
 
 const refreshTokenOptions = {
     httpOnly: true,
     secure: true,       
-    sameSite: 'lax',
-    expiresIn: "7d"
+    sameSite: 'None',
+    maxAge: 60 * 60 * 24 * 15,
 };
 
  async function createAccessTokenAndRefreshToken(user_id){
