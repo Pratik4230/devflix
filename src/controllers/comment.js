@@ -160,17 +160,20 @@ const getVideoComments = async (req, res) => {
           commentorAvatar: { $first: "$commentor.avatarImage.url" },
           commentContent: "$comments.content",
           commentCreatedAt: "$comments.createdAt",
-          key: "$comments._id"
+          key: "$comments._id",
+          likeCount:  { $size: { $ifNull: ["$comments.likes", []] } },
         },
       },
       {
         $project: {
-        _id: 0,
+          _id:0,
+        videoId:"$_id" ,
           key: 1,
           content: "$commentContent",
           channelName: "$commentorChannelName",
           avatar: "$commentorAvatar",
           createdAt: "$commentCreatedAt",
+          likeCount: 1,
         },
       },
     ]);
@@ -182,7 +185,7 @@ const getVideoComments = async (req, res) => {
 
     return res.status(200).json(comments);
   } catch (error) {
-    console.error("Error fetching video comments: ", error);
+    console.error("Error fetching video comments: ", error.message);
     return res.status(500).json({ message: "Server error" });
   }
 };

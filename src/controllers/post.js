@@ -133,6 +133,7 @@ const getChannelPosts = async (req, res) => {
             _id: 1,
             content: 1, 
             createdAt: 1,
+            channelId : "$ownerDetails._id", 
             "ownerDetails.channelName": 1, 
             "ownerDetails.avatarImage.url": 1, 
             likes: { $size: "$likes" },

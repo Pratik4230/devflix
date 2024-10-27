@@ -55,10 +55,10 @@ const toggleCommentLike = async (req, res) => {
             return res.status(404).send("Comment not found");
         }
 
-        const alreadyLiked = comment.likes.includes(req.user._id);
+        const alreadyLiked = comment.likes.includes(req.user?._id);
 
         if (alreadyLiked) {
-            comment.likes.pull(req.user._id);  // Unlike
+            comment.likes.pull(req.user?._id);  
             await comment.save();
             return res.status(200).json({
                 message: "Unliked comment",
@@ -66,7 +66,7 @@ const toggleCommentLike = async (req, res) => {
             });
         }
 
-        comment.likes.push(req.user._id);  // Like
+        comment.likes.push(req.user?._id);  
         await comment.save();
         
         return res.status(200).json({
@@ -95,7 +95,7 @@ const togglePostLike = async (req, res) => {
         const alreadyLiked = post.likes.includes(req.user._id);
 
         if (alreadyLiked) {
-            post.likes.pull(req.user._id);  // Unlike
+            post.likes.pull(req.user._id);  
             await post.save();
             return res.status(200).json({
                 message: "Unliked post",
@@ -103,7 +103,7 @@ const togglePostLike = async (req, res) => {
             });
         }
 
-        post.likes.push(req.user._id);  // Like
+        post.likes.push(req.user._id); 
         await post.save();
         
         return res.status(200).json({
