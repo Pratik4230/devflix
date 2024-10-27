@@ -178,15 +178,15 @@ const logoutUser = async (req, res) => {
         .status(200)
         .clearCookie('accessToken', {
             httpOnly: true,
-            secure: false,
-            sameSite: 'lax'
+            secure: true,       
+            sameSite: 'None',
           })
           .clearCookie('refreshToken', {
             httpOnly: true,
-            secure: false,
-            sameSite: 'lax'
+            secure: true,       
+            sameSite: 'None',
           })
-          .json("User logged Out")
+          .json({ message: "User loggedout backend "})
     
     } catch (error) {
         return res.status(500).json({
