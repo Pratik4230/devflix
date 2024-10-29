@@ -51,12 +51,6 @@ const userSchema = new mongoose.Schema({
    },
 
 
-   watchHistory:[
-    {
-        type: mongoose.Schema.Types.ObjectId,
-         ref: "Video"
-    }
-   ],
 
    refreshToken: {
     type: String
@@ -66,11 +60,11 @@ const userSchema = new mongoose.Schema({
 );
 
 userSchema.methods.getAccessToken =  function () {
-  return jwt.sign({_id: this._id} , process.env.ACCESS_TOKEN_SECRET)
+  return jwt.sign({_id: this._id} , process.env.ACCESS_TOKEN_SECRET, { expiresIn: '30d' })
 };
 
 userSchema.methods.getRefreshToken =  function () {
-  return  jwt.sign({_id: this._id , emailId: this.emailId} , process.env.REFRESH_TOKEN_SECRET)
+  return  jwt.sign({_id: this._id , emailId: this.emailId} , process.env.REFRESH_TOKEN_SECRET, { expiresIn: '60d' })
 };
 
 userSchema.methods.getPasswordValid = async function (pass) {

@@ -1,4 +1,4 @@
-const { isValidObjectId } = require("mongoose");
+const { isValidObjectId, mongoose } = require("mongoose");
 const {Video} = require("../models/videoModel");
 const {Comment} = require("../models/commentModel");
 const {Post} = require("../models/postModel");
@@ -19,7 +19,7 @@ const toggleVideoLike = async (req, res) => {
         const alreadyLiked = video.likes.includes(req.user?._id);
 
         if (alreadyLiked) {
-            video.likes.pull(req.user._id);  // Unlike
+            video.likes.pull(req.user._id); 
             await video.save();
             return res.status(200).json({
                 message: "Unliked video",
@@ -27,7 +27,7 @@ const toggleVideoLike = async (req, res) => {
             });
         }
 
-        video.likes.push(req.user._id);  // Like
+        video.likes.push(req.user._id);  
         await video.save();
         
         return res.status(200).json({
@@ -36,7 +36,7 @@ const toggleVideoLike = async (req, res) => {
         });
 
     } catch (error) {
-        console.log(error);
+        console.log(error.message);
         
         return res.status(500).send("ERROR toggleVideoLike: " + error);
     }
@@ -120,17 +120,51 @@ const getLikedVideos = async (req, res) => {
     try {
         const userId = req.user._id; 
     
-        const likedVideos = await Video.find({ likes: userId })
-        .populate("owner", "channelName avatarImage.url") 
-        .select("video.url thumbnail.url title description views duration createdAt"); 
+        const likedVideos = await Video.aggregate([
+  
+            {
+              $match: {
+                likes : { $in : [new mongoose.Types.ObjectId(userId)]},
+                isPublished : true,
+              }
+            },
+            {
+                            $lookup: {
+                              from: "users", 
+                              localField: "owner",
+                              foreignField: "_id",
+                              as: "ownerDetails",
+                            },
+                          },
+                          { $unwind: "$ownerDetails" },
+            {
+                            $project: {
+                              _id: 1,
+                              "thumbnail.url": 1, 
+                              title: 1, 
+                              description: 1,
+                              views: 1, 
+                             duration: 1, 
+                              createdAt: 1, 
+                              isPublished: 1,
+                              "ownerDetails.channelName": 1,
+                              "ownerDetails.avatarImage.url": 1,
+                            },
+                          },
+          ]);
+       
     
         
         if (likedVideos.length === 0) {
           return res.status(404).json({ message: "No liked videos found" });
         }
 
-        return res.status(200).json(likedVideos);
+        return res.status(200).json({
+            message: "success",
+            data: likedVideos});
+            
       } catch (error) {
+       console.log("likedvideos err", error.message);
        
         return res.status(500).json({ message: "Server error" });
       }

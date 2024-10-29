@@ -151,37 +151,37 @@ const getSubsVideos = async (req, res) => {
   try {
       const userId = req.user._id; 
 
-      // Step 1: Find channels the user is subscribed to
+      
       const subscriptions = await Subscription.find({ subscriber: userId }).populate('channel');
 
-      // Extract channel IDs from the subscriptions
+
       const channelIds = subscriptions.map(sub => sub.channel._id);
 
       if (channelIds.length === 0) {
           return res.status(404).json({ message: "No subscriptions found" });
       }
 
-      // Step 2: Fetch random videos from those subscribed channels
+      
       const videos = await Video.aggregate([
           {
               $match: {
-                  owner: { $in: channelIds }, // Match videos from subscribed channels
-                  isPublished: true, // Only published videos
+                  owner: { $in: channelIds }, 
+                  isPublished: true, 
               }
           },
           {
-              $sample: { size: 10 } // Randomly sample 10 videos (you can adjust this number)
+              $sample: { size: 10 } 
           },
           {
               $lookup: {
-                  from: "users", // Assuming the users collection is named 'users'
+                  from: "users", 
                   localField: "owner",
                   foreignField: "_id",
                   as: "ownerDetails"
               }
           },
           {
-              $unwind: "$ownerDetails" // Unwind to get owner details
+              $unwind: "$ownerDetails" 
           },
           {
               $project: {

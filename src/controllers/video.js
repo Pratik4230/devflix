@@ -4,6 +4,7 @@ const { Video } = require("../models/videoModel");
 const { cloudinaryUpload, cloudinaryDelete } = require("../utils/cloudinary");
 const mongoose = require("mongoose");
 const { Subscription } = require("../models/subscriptionModel");
+const { User } = require("../models/userModel");
 
 
 const uploadVideo = async(req, res) => {
@@ -54,9 +55,9 @@ const uploadVideo = async(req, res) => {
         isPublished: true
        });
     
-       await video.save()
+       await video.save();
     
-       const uploadedVideo = await Video.findById(video._id)
+       const uploadedVideo = await Video.findById(video._id);
     
        if (!uploadedVideo) {
         return res.status(500).send("videoUpload failed please try again !!!");
@@ -69,7 +70,7 @@ const uploadVideo = async(req, res) => {
        video});
     } catch (error) {
         
-        res.status(500).send("ERROR uploading video : " + error)
+        res.status(500).send("ERROR uploading video : " + error.message)
         
     }
 }
@@ -160,7 +161,7 @@ const deleteVideo = async (req, res) =>{
         }
     
         const video = await Video.findById(videoId);
-    console.log("video" , video);
+   
     
         if (!video) {
             return res.status(404).send("Video not found")
@@ -186,44 +187,39 @@ const deleteVideo = async (req, res) =>{
     }
 }
 
-const toggleVideoPublish = async (req,res) => {
-    try {
-        const {videoId} = req.params;
-    
-        if (!isValidObjectId(videoId)) {
-            return res.status(404).send("invalid video id")
-        }
-    
-        const video = await Video.findById(videoId);
-    
-        if (!video) {
-            return res.status(404).send("Video doen't exists")
-        }
-    
-        if(video.owner?.toString() !== req.user?._id.toString()){
-            return res.status(401).send("Unauthorized access")
-        }
-    
-        const toggled = await Video.findByIdAndUpdate({
-            _id: videoId
-        }, {
-           $set:{
-            isPublished: !video.isPublished
-           }
-        },
-        {new:true}
-    )
-    
-    if (!toggled) {
-        return res.status(500).send("Failed to toggle please try again")
-    }
-    
-    return res.status(200).json({message:"success", toggled})
-    } catch (error) {
-    
-        return res.status(500).send("ERROR toggle video : " + error)
-    }
-}
+const toggleVideoPublish = async (req, res) => {
+  try {
+      const { videoId } = req.params;
+
+      if (!isValidObjectId(videoId)) {
+          return res.status(400).json({ message: "Invalid video ID" });
+      }
+
+      const video = await Video.findById(videoId);
+      if (!video) {
+          return res.status(404).json({ message: "Video doesn't exist" });
+      }
+
+      if (video.owner.toString() !== req.user._id.toString()) {
+          return res.status(403).json({ message: "Unauthorized access" });
+      }
+
+      const toggled = await Video.findByIdAndUpdate(
+          videoId,
+          { $set: { isPublished: !video.isPublished } },
+          { new: true }
+      );
+
+      if (!toggled) {
+          return res.status(500).json({ message: "Failed to toggle. Please try again." });
+      }
+
+      return res.status(200).json({ message: "Video publish status toggled successfully", video: toggled });
+  } catch (error) {
+      return res.status(500).json({ message: "Error toggling video status", error: error.message });
+  }
+};
+
 
 const getVideoById = async (req,res) => {
     try {
@@ -299,6 +295,63 @@ const getVideosByChannel = async (req,res) => {
         const videos = await Video.aggregate([
             
                 {
+                  $match: {
+                     owner: new mongoose.Types.ObjectId(channelId),
+                     isPublished: true,
+                    }
+                },
+                {
+                  $lookup: {
+                    from: "users", 
+                    localField: "owner",
+                    foreignField: "_id",
+                    as: "ownerDetails",
+                  },
+                },
+                { $unwind: "$ownerDetails" }, 
+    
+                {
+                  $project: {
+                    _id: 1,
+                    "thumbnail.url": 1, 
+                    title: 1, 
+                    description: 1,
+                    views: 1, 
+                   duration: 1, 
+                    createdAt: 1, 
+                    isPublished: 1,
+                    "ownerDetails.channelName": 1,
+                    "ownerDetails.avatarImage.url": 1,
+                  },
+                },
+
+              
+        ])
+
+        if (!videos || videos.length == 0) {
+            return res.status(404).json({ message: "No videos found for this channel" }); 
+        }
+
+       return res.status(200).json({
+        message: "success",
+        videos
+      });
+       
+        
+    } catch (error) { 
+        console.error("Error fetching videos for channel: ", error.message);
+    res.status(500).json({ message: "Server error" });
+    }
+}
+const getVideosToManage = async (req,res) => {
+    
+    try {
+        const channelId = req.user?._id;
+
+
+        const videos = await Video.aggregate([
+            
+                {
                   $match: { owner: new mongoose.Types.ObjectId(channelId)}
                 },
                 {
@@ -316,9 +369,11 @@ const getVideosByChannel = async (req,res) => {
                     _id: 1,
                     "thumbnail.url": 1, 
                     title: 1, 
+                    description: 1,
                     views: 1, 
                    duration: 1, 
                     createdAt: 1, 
+                    isPublished: 1,
                     "ownerDetails.channelName": 1,
                     "ownerDetails.avatarImage.url": 1,
                   },
@@ -351,6 +406,11 @@ const getFeed = async (req, res) => {
   
       const videos = await Video.aggregate([
         {
+          $match: {
+            isPublished: true,
+          }
+        },
+        {
           $lookup: {
             from: "users",
             localField: "owner",
@@ -371,7 +431,8 @@ const getFeed = async (req, res) => {
             duration: 1,
             "ownerDetails.channelName": 1,
             "ownerDetails.avatarImage.url": 1,
-            createdAt: 1
+            createdAt: 1,
+            isPublished: 1,
           }
         },
         {
@@ -385,7 +446,7 @@ const getFeed = async (req, res) => {
         }
       ]);
   
-      const totalVideos = await Video.countDocuments(); // Total number of videos for pagination metadata
+      const totalVideos = await Video.countDocuments(); 
       const totalPages = Math.ceil(totalVideos / limit);
   
       res.status(200).json({
@@ -400,5 +461,7 @@ const getFeed = async (req, res) => {
       res.status(500).json({ message: "Server hii Error", error });
     }
   };
+
+ 
   
-module.exports={uploadVideo, updateVideo, deleteVideo, toggleVideoPublish, getVideoById, getVideosByChannel, getFeed}
+module.exports={uploadVideo, updateVideo, deleteVideo, toggleVideoPublish, getVideoById, getVideosByChannel, getFeed, getVideosToManage}

@@ -14,14 +14,14 @@ const accessTokenOptions = {
     httpOnly: true,
     secure: true,      
     sameSite: 'None', 
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge: 60 * 60 * 24 * 30,
 };
 
 const refreshTokenOptions = {
     httpOnly: true,
     secure: true,       
     sameSite: 'None',
-    maxAge: 60 * 60 * 24 * 15,
+    maxAge: 60 * 60 * 24 * 60,
 };
 
  async function createAccessTokenAndRefreshToken(user_id){
@@ -493,68 +493,6 @@ try {
 
 
 
-const getWatchHistory = async(req, res) => {
-    try {
-
-      const userId = req.user.user_id;
-        const user = await User.aggregate([
-            {
-                $match: {
-                    _id: new mongoose.Types.ObjectId(userId)
-                }
-            },
-            {
-                $lookup: {
-                    from: "videos",
-                    localField: "watchHistory",
-                    foreignField: "_id",
-                    as: "watchHistory",
-                    pipeline: [
-                        {
-                            $lookup: {
-                                from: "users",
-                                localField: "owner",
-                                foreignField: "_id",
-                                as: "owner",
-                                pipeline: [
-                                    {
-                                        $project: {
-                                            channelName: 1,
-                                            userName: 1,
-                                            avatarImage: 1
-                                        }
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            $addFields:{
-                                owner:{
-                                    $first: "$owner"
-                                }
-                            }
-                        }
-                    ]
-                }
-            }
-        ]);
-
-        if(!user || user.length == 0) {
-            return res.status(404).send("no watch history ")
-        }
-    
-        return res.status(200).json({
-            message: "Success",
-            data: user[0].watchHistory,
-        }
-        )
-    } catch (error) {
-      console.log(error);
-      
-        return res.status(500).send("server error watch history")
-    }
-    
-}
 
 
-module.exports={signUpUser, logInUser,logoutUser,renewAccess, getProfile , updatePassword, updateAvatarImage, updateCoverImage, getChannel , getWatchHistory};
+module.exports={signUpUser, logInUser,logoutUser,renewAccess, getProfile , updatePassword, updateAvatarImage, updateCoverImage, getChannel };

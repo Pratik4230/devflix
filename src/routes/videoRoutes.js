@@ -1,13 +1,14 @@
 const express = require("express");
-const { uploadVideo, updateVideo, deleteVideo, toggleVideoPublish ,  getVideoById , getVideosByChannel , getFeed} = require("../controllers/video");
+const { uploadVideo, updateVideo, deleteVideo, toggleVideoPublish ,  getVideoById , getVideosByChannel , getFeed, getVideosToManage} = require("../controllers/video");
 const { authUser } = require("../middlewares/authCheck");
 const { upload } = require("../middlewares/multer");
 
 
 const router = express.Router();
 
+router.use(authUser)
+
 router.route("/upload").post(
-    authUser,
     upload.fields([
         { name: "video", maxCount: 1 },
         { name: "thumbnail", maxCount: 1 }
@@ -16,15 +17,16 @@ router.route("/upload").post(
 );
 
 router.route("/update/:videoId").patch(
-    authUser,
     upload.single("thumbnail"),
     updateVideo
 );
 
-router.route("/delete/:videoId").delete(authUser, deleteVideo);
-router.route("/togglepublish/:videoId").patch(authUser, toggleVideoPublish);
-router.route("/vid/:videoId").get(authUser, getVideoById);
-router.route("/vids/:channelId").get(authUser, getVideosByChannel);
-router.route("/feed").get(authUser, getFeed);
+router.route("/delete/:videoId").delete(deleteVideo);
+router.route("/togglepublish/:videoId").patch(toggleVideoPublish);
+router.route("/vid/:videoId").get(getVideoById);
+router.route("/vids/:channelId").get(getVideosByChannel);
+router.route("/feed").get(getFeed);
+router.route("/manage").get(getVideosToManage);
+
 
 module.exports = router;

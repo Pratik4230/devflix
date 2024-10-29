@@ -5,6 +5,7 @@ const {User} = require("../models/userModel")
 const authUser = async (req, res, next) => {
     try {
 
+      
      const accessToken  = req.cookies?.accessToken;
      
      
