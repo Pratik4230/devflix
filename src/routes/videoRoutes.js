@@ -1,5 +1,5 @@
 const express = require("express");
-const { uploadVideo, updateVideo, deleteVideo, toggleVideoPublish ,  getVideoById , getVideosByChannel , getFeed, getVideosToManage} = require("../controllers/video");
+const { uploadVideo, updateVideo, deleteVideo, toggleVideoPublish ,  getVideoById , getVideosByChannel , getFeed, getVideosToManage, incrementViews} = require("../controllers/video");
 const { authUser } = require("../middlewares/authCheck");
 const { upload } = require("../middlewares/multer");
 
@@ -27,6 +27,7 @@ router.route("/vid/:videoId").get(getVideoById);
 router.route("/vids/:channelId").get(getVideosByChannel);
 router.route("/feed").get(getFeed);
 router.route("/manage").get(getVideosToManage);
+router.route("/viewsplus/:videoId").post(incrementViews);
 
 
 module.exports = router;
