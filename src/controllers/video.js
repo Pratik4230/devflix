@@ -4,7 +4,7 @@ const { Video } = require("../models/videoModel");
 const { cloudinaryUpload, cloudinaryDelete } = require("../utils/cloudinary");
 const mongoose = require("mongoose");
 const { Subscription } = require("../models/subscriptionModel");
-const { User } = require("../models/userModel");
+
 
 
 const uploadVideo = async(req, res) => {
@@ -462,6 +462,28 @@ const getFeed = async (req, res) => {
     }
   };
 
+
+  const incrementViews = async (req,res) => {
+    const { videoId } = req.params;
+
+    try {
+      const video = await Video.findById(videoId);
+    if (!video) {
+      return res.status(404).json({ message: "Video not found" });
+    }
+
+    video.views += 1; 
+    await video.save();
+
+      res.status(200).json(video.toObject());
+
+    } catch (error) {
+      console.log("Error incrementing view count", error.message);
+      
+      res.status(500).json({ message: 'Error incrementing view count'});
+
+    }
+  }
  
   
-module.exports={uploadVideo, updateVideo, deleteVideo, toggleVideoPublish, getVideoById, getVideosByChannel, getFeed, getVideosToManage}
+module.exports={uploadVideo, updateVideo, deleteVideo, toggleVideoPublish, getVideoById, getVideosByChannel, getFeed, getVideosToManage, incrementViews}
