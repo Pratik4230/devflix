@@ -19,7 +19,7 @@ const accessTokenOptions = {
 
 const refreshTokenOptions = {
     httpOnly: true,
-    secure: true,       
+    secure: true,      
     sameSite: 'None',
     maxAge: 60 * 60 * 24 * 60,
 };
@@ -86,10 +86,10 @@ const user  = new User({
   const createdUser = await User.findOne({emailId: emailId});
 
   if (!createdUser) {
-    return res.status(404).jsom({message:"somehting went wrong please try again"})
+    return res.status(404).jsom({message:"somehting went wrong please try again hii"})
   }
 
-  const {accessToken , refreshToken} = await createAccessTokenAndRefreshToken(createdUser._id);
+  const {accessToken , refreshToken} = await createAccessTokenAndRefreshToken(createdUser?._id);
         
 
   let userWithoutPassword = createdUser.toObject();
@@ -109,7 +109,7 @@ const user  = new User({
     
        return res.status(500)
        .json({
-         message : "Sign Up Error Please try again ",
+         message : "Sign Up Error Please try again hiierror ",
          data : error.message
        })
 }
@@ -178,15 +178,15 @@ const logoutUser = async (req, res) => {
         .status(200)
         .clearCookie('accessToken', {
             httpOnly: true,
-            secure: true,       
+            secure: true,      
             sameSite: 'None',
           })
           .clearCookie('refreshToken', {
             httpOnly: true,
-            secure: true,       
-            sameSite: 'None',
+            secure: true,      
+             sameSite: 'None',
           })
-          .json({ message: "User loggedout backend "})
+          .json({ message: "User logged out backend "})
     
     } catch (error) {
         return res.status(500).json({
@@ -474,11 +474,14 @@ try {
                 }
             }
         ])
+
+    
     
         if (!channel?.length) {
             return res.status(404).send("channel doesn't exists")
         }
-    
+
+        
         return res
         .status(200)
         .json({
