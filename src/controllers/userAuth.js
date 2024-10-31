@@ -179,12 +179,12 @@ const logoutUser = async (req, res) => {
         .clearCookie('accessToken', {
             httpOnly: true,
             secure: true,      
-            sameSite: 'None',
+             sameSite: 'None',
           })
           .clearCookie('refreshToken', {
             httpOnly: true,
             secure: true,      
-             sameSite: 'None',
+           sameSite: 'None',
           })
           .json({ message: "User logged out backend "})
     
