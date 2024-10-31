@@ -9,7 +9,7 @@ app.use(cookieParser());
 const corsOptions = {
     origin: process.env.CORS_ORIGIN,
     credentials: true, 
-    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PATCH','PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
@@ -30,6 +30,8 @@ const likeRouter = require("./routes/likeRoutes");
 const playlistRouter = require("./routes/playlistRoutes");
 const subscriptionRouter = require("./routes/subscriptionRoutes");
 
+const feedbackRouter = require('./routes/feedback')
+
 
 app.use("/user", userRouter);
 app.use("/post", postRouter);
@@ -38,5 +40,7 @@ app.use("/comment", commentRouter);
 app.use("/like", likeRouter);
 app.use("/playlist", playlistRouter);
 app.use("/subscription", subscriptionRouter);
+
+app.use("/feedback", feedbackRouter)
 
 module.exports = { app };
