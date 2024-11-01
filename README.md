@@ -2,7 +2,7 @@
 
 # Devflix Backend
 
-Welcome to the **Devflix** backend repository! This backend, built on Node.js and Express, powers the core features of Devflix, a video streaming platform with functionalities similar to YouTube, designed especially for developers. It includes features like user authentication, video uploads, playlists, comments, likes, and watch history.
+Welcome to the **Devflix** backend repository! This backend, built on Node.js and Express, powers the core features of Devflix, a video streaming platform with functionalities similar to YouTube, designed especially for developers. It includes features like user authentication, video uploads, playlists, comments, likes, and many more.
 
 ---
 
@@ -24,9 +24,7 @@ Welcome to the **Devflix** backend repository! This backend, built on Node.js an
 - **Video Management**: Upload, update, and delete videos, with support for Cloudinary storage.
 - **Playlists**: Create and manage playlists.
 - **Likes and Comments**: Like videos and add comments, with toggle functionality.
-- **Watch History**: Tracks the user's watch history.
-- **Search and Recommendations**: Search videos by title and tags.
-- **Real-time Notifications**: Event-driven alerts for likes and comments.
+- **Real-time Alerts**: Event-driven alerts for likes and comments.
 
 ---
 
@@ -47,8 +45,8 @@ Welcome to the **Devflix** backend repository! This backend, built on Node.js an
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/yourusername/devflix-backend.git
-   cd devflix-backend
+   git clone https://github.com/Pratik4230/devflix.git
+   cd devflix
    ```
 
 2. **Install dependencies:**
