@@ -6,74 +6,55 @@ const mongoose = require("mongoose");
 const { Subscription } = require("../models/subscriptionModel");
 
 
+const uploadVideo = async (req, res) => {
+  try {
+    const { title, description } = req.body;
 
-const uploadVideo = async(req, res) => {
+    if (!(title && description)) {
+      return res.status(400).send("All fields are required");
+    }
 
+    const videoFilePath = req.files?.video[0].path;
+    const thumbnailFilePath = req.files?.thumbnail[0].path;
+
+    if (!videoFilePath || !thumbnailFilePath) {
+      return res.status(400).send("Video and thumbnail paths are required");
+    }
+
+    
+    let videoCloud, thumbnailCloud;
     try {
-        const {title, description} = req.body;
-    
-        if (!(title && description)) {
-            return res.status(400).send("All fields are required")
-        }
-    
-        const videoFilePath = req.files?.video[0].path;
-        const thumbnailFilePath = req.files?.thumbnail[0].path;
-    
-        if (!videoFilePath) {
-            return res.status(400).send("video path is required")
-        }
-        if (!thumbnailFilePath) {
-            return res.status(400).send("thumbnail path is required")
-        }
-    
-      const videoCloud =  await cloudinaryUpload(videoFilePath);
-       const thumbnailCloud = await cloudinaryUpload(thumbnailFilePath);
-    
-       if (!videoCloud) {
-        return res.status(500).send("Something went wrong while uploading video Please try again")
-       }
-       if (!thumbnailCloud) {
-        return res.status(500).send("Something went wrong while uploading video Please try again")
-       }
-    
-       const video = new Video({
-        video: {
-            url: videoCloud.url || videoCloud.secure_url,
-            public_id: videoCloud.public_id
-        },
-    
-        thumbnail: {
-            url: thumbnailCloud.url || videoCloud.secure_url,
-            public_id: thumbnailCloud.public_id
-        },
-    
-        title: title,
-        description: description,
-    
-        duration: videoCloud.duration,
-        owner: req.user?._id,
-        isPublished: true
-       });
-    
-       await video.save();
-    
-       const uploadedVideo = await Video.findById(video._id);
-    
-       if (!uploadedVideo) {
-        return res.status(500).send("videoUpload failed please try again !!!");
+      videoCloud = await cloudinaryUpload(videoFilePath);
+      thumbnailCloud = await cloudinaryUpload(thumbnailFilePath);
+    } catch (uploadError) {
+      console.error("Cloudinary upload error:", uploadError);
+      return res.status(500).send("Error uploading files to Cloudinary.");
     }
-    
-    return res
-        .status(200)
-        .json({
-       message: "Video uploaded successfully",
-       video});
-    } catch (error) {
-        
-        res.status(500).send("ERROR uploading video : " + error.message)
-        
+
+    if (!videoCloud || !thumbnailCloud) {
+      return res.status(500).send("Failed to upload video or thumbnail.");
     }
-}
+
+    
+    const video = new Video({
+      video: { url: videoCloud.url, public_id: videoCloud.public_id },
+      thumbnail: { url: thumbnailCloud.url, public_id: thumbnailCloud.public_id },
+      title,
+      description,
+      duration: videoCloud.duration,
+      owner: req.user?._id,
+      isPublished: true,
+    });
+
+    await video.save();
+
+    return res.status(200).json({ message: "Video uploaded successfully", video });
+  } catch (error) {
+    console.error("Upload handler error:", error);
+    res.status(500).send("Server error during video upload: " + error.message);
+  }
+};
+
 
 const updateVideo = async (req, res) => {
    try {
