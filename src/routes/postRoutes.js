@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.use(authUser)
 router.route("/create").post(createPost);
-router.route("/update/:postId").patch(updatePost);
+router.route("/update/:postId").put(updatePost);
 router.route("/delete/:postId").delete(deletePost);
 router.route("/channel/:channelId").get(getChannelPosts);
 
