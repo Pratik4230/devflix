@@ -134,12 +134,11 @@ const getSubscribedChannels  = async (req, res) => {
    
     
     if (!subscribedChannels || !subscribedChannels.length) {
-        return res.status(204).json({ message: "No subscribed channel found",
-             data: subscribedChannels
+        return res.status(204).json({ message: "No subscribed channel found"
          });
       }
-      c
      
+  
       return res.status(200).json(subscribedChannels);
      
     } catch (error) {
