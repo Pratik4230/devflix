@@ -139,14 +139,19 @@ const getChannelPosts = async (req, res) => {
             likes: { $size: "$likes" },
            
           }
-        }
+        },
+        {
+          $sort: { createdAt: -1 }
+        },
       
     ]);
 
+    
+    
     if (posts.length === 0) {
-      return res.status(404).json({ message: "No posts found for this channel" });
+      return res.status(204).json({ message: "There is no any posts uploaded by owner" });
     }
-
+    
     res.status(200).json(posts);
 
   } catch (error) {

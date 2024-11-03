@@ -24,14 +24,17 @@ const uploadVideo = async (req, res) => {
     
     let videoCloud, thumbnailCloud;
     try {
+      
       videoCloud = await cloudinaryUpload(videoFilePath);
+      
       thumbnailCloud = await cloudinaryUpload(thumbnailFilePath);
+      
     } catch (uploadError) {
-      console.error("Cloudinary upload error:", uploadError);
+      console.warn("Cloudinary upload error:", uploadError);
       return res.status(500).send("Error uploading files to Cloudinary.");
     }
 
-    if (!videoCloud || !thumbnailCloud) {
+    if (!videoCloud || !thumbnailCloud) {   
       return res.status(500).send("Failed to upload video or thumbnail.");
     }
 
@@ -46,7 +49,9 @@ const uploadVideo = async (req, res) => {
       isPublished: true,
     });
 
+
     await video.save();
+
 
     return res.status(200).json({ message: "Video uploaded successfully", video });
   } catch (error) {
@@ -122,7 +127,7 @@ const updateVideo = async (req, res) => {
      }
  
      return res.status(200).json({
-         message: "ideo updated successfully",
+         message: "Video updated successfully",
          updatedVideo
  
      }) 
@@ -304,13 +309,17 @@ const getVideosByChannel = async (req,res) => {
                     "ownerDetails.channelName": 1,
                     "ownerDetails.avatarImage.url": 1,
                   },
+                 
+                },
+                {
+                  $sort: { createdAt: -1 }
                 },
 
               
         ])
 
         if (!videos || videos.length == 0) {
-            return res.status(404).json({ message: "No videos found for this channel" }); 
+            return res.status(204).json({ message: "No videos uploaded by this channel" }); 
         }
 
        return res.status(200).json({
@@ -359,12 +368,15 @@ const getVideosToManage = async (req,res) => {
                     "ownerDetails.avatarImage.url": 1,
                   },
                 },
+                {
+                   $sort: {createdAt: -1}
+                }
 
               
         ])
 
         if (!videos || videos.length == 0) {
-            return res.status(404).json({ message: "No videos found for this channel" }); 
+            return res.status(204).json({ message: "No videos found for this channel" }); 
         }
 
        return res.status(200).json({
@@ -417,8 +429,9 @@ const getFeed = async (req, res) => {
           }
         },
         {
-          $sort: { createdAt: -1 } 
+          $sort: { createdAt: -1 }
         },
+      
         {
           $skip: skip 
         },

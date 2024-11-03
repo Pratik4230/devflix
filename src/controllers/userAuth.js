@@ -179,7 +179,7 @@ const logoutUser = async (req, res) => {
         .clearCookie('accessToken', {
             httpOnly: true,
             secure: true,      
-             sameSite: 'None',
+           sameSite: 'None',
           })
           .clearCookie('refreshToken', {
             httpOnly: true,
@@ -478,7 +478,7 @@ try {
     
     
         if (!channel?.length) {
-            return res.status(404).send("channel doesn't exists")
+            return res.status(204).send("channel has no data")
         }
 
         

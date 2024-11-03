@@ -1,5 +1,6 @@
 const cloudinary = require('cloudinary').v2;
 const fs = require('fs');
+require('dotenv').config()
 
 
 
@@ -21,7 +22,7 @@ const cloudinaryUpload = async (localFilePath) => {
         
      fs.unlink(localFilePath , (error) =>{
         if (error) {
-            console.error("Error deleting local file", error);
+            console.warn("Error deleting local file", error);
         }
      })
         return uploadResult;
@@ -29,6 +30,7 @@ const cloudinaryUpload = async (localFilePath) => {
     } catch (error) {
         fs.unlink(localFilePath, (err) => {
             if (err) {
+                
                 console.error("Error deleting local file after failure", err);
             }
         });

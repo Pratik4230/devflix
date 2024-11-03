@@ -153,10 +153,9 @@ const getLikedVideos = async (req, res) => {
                           },
           ]);
        
-    
         
         if (likedVideos.length === 0) {
-          return res.status(404).json({ message: "No liked videos found" });
+          return res.status(204).json({ message: "You have not liked any video", likedVideos });
         }
 
         return res.status(200).json({

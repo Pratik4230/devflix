@@ -90,7 +90,7 @@ const getUserChannelSubscribers = async (req, res) => {
     );
 
     if (!subscribers || !subscribers.length) {
-        return res.status(404).json({ message: "No subscribers found" });
+        return res.status(204).json({ message: "no one has subscribed to you channel" });
       }
   
       return res.status(200).json(subscribers);
@@ -104,7 +104,6 @@ const getUserChannelSubscribers = async (req, res) => {
 const getSubscribedChannels  = async (req, res) => {
     try {
         const userId = req.user._id;  
- 
  
         const subscribedChannels = await Subscription.aggregate(
             [
@@ -133,11 +132,15 @@ const getSubscribedChannels  = async (req, res) => {
                 ]
     );
    
+    
     if (!subscribedChannels || !subscribedChannels.length) {
-        return res.status(404).json({ message: "No subscribed channel found" });
+        return res.status(204).json({ message: "No subscribed channel found",
+             data: subscribedChannels
+         });
       }
+      c
      
-      return res.status(200).json( subscribedChannels);
+      return res.status(200).json(subscribedChannels);
      
     } catch (error) {
 
@@ -158,13 +161,13 @@ const getSubsVideos = async (req, res) => {
       const subscriptions = await Subscription.find({ subscriber: userId }).populate('channel');
      
       if (!subscriptions || subscriptions.length === 0) {
-        return res.status(404).json({ message: "No subscriptions found" });
+        return res.status(204).json({ message: "No subscriptions found" });
       }
 
-      const channelIds = subscriptions.map((sub) => sub.channel._id);
+      const channelIds = subscriptions.map((sub) => sub.channel?._id);
       
       if (channelIds.length === 0) {
-          return res.status(404).json({ message: "No subscriptions found" });
+          return res.status(204).json({ message: "No subscriptions found" });
       }
       
       const videos = await Video.aggregate([
@@ -204,7 +207,7 @@ const getSubsVideos = async (req, res) => {
       ]);
      
       if (!videos || videos.length === 0) {
-        return res.status(404).json({ message: "No videos found from subscriptions" });
+        return res.status(204).json({ message: "No videos uploaded by channel owner" });
       }
     
       return res.status(200).json({

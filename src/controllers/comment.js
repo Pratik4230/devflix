@@ -125,6 +125,10 @@ const deleteComment = async (req, res) => {
 const getVideoComments = async (req, res) => {
   try {
     const { videoId } = req.params;
+    const  sortType = req.query?.sortType || 'createdAt';
+    
+    const sortCriteria = sortType === 'likeCount' ? { likeCount: -1 } : { createdAt: -1 };
+
 
     const comments = await Video.aggregate([
       {
@@ -176,11 +180,15 @@ const getVideoComments = async (req, res) => {
           likeCount: 1,
         },
       },
+      {
+        $sort: sortCriteria
+      },
+     
     ]);
 
    
     if (!comments || comments.length === 0) {
-      return res.status(404).json({ message: "No comments found for this video" });
+      return res.status(204).json({ message: "There is no comments till this time" });
     }
 
     return res.status(200).json(comments);
