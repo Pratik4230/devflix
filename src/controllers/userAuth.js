@@ -1,501 +1,473 @@
-
-const {ValidateSignUpData, ValidateLogInData} = require("../utils/validations");
+const {
+  ValidateSignUpData,
+  ValidateLogInData,
+} = require("../utils/validations");
 const bcrypt = require("bcrypt");
-const {User} = require("../models/userModel");
+const { User } = require("../models/userModel");
 
 const jwt = require("jsonwebtoken");
 
-const {cloudinaryUpload} = require("../utils/cloudinary");
-const {  mongoose } = require("mongoose");
-const cloudinary = require('cloudinary').v2;
-
+const { cloudinaryUpload } = require("../utils/cloudinary");
+const { mongoose } = require("mongoose");
+const cloudinary = require("cloudinary").v2;
 
 const accessTokenOptions = {
-    httpOnly: true,
-    secure: true,      
-    sameSite: 'None', 
-    maxAge: 60 * 60 * 24 * 30,
+  httpOnly: true,
+  secure: false,
+  sameSite: "Lax",
+  maxAge: 60 * 60 * 24 * 30,
 };
 
 const refreshTokenOptions = {
-    httpOnly: true,
-    secure: true,      
-    sameSite: 'None',
-    maxAge: 60 * 60 * 24 * 60,
+  httpOnly: true,
+  secure: false,
+  sameSite: "Lax",
+  maxAge: 60 * 60 * 24 * 60,
 };
 
- async function createAccessTokenAndRefreshToken(user_id){
+async function createAccessTokenAndRefreshToken(user_id) {
+  try {
+    const user = await User.findById(user_id);
 
-    try {
-        const user = await User.findById(user_id);
-    
-       const accessToken = user.getAccessToken();
-       const refreshToken = user.getRefreshToken();
-    
-       user.refreshToken = refreshToken ;
-    
-       await user.save({validateBeforeSave: false});
-    
-       return { accessToken , refreshToken};
+    const accessToken = user.getAccessToken();
+    const refreshToken = user.getRefreshToken();
 
-    } catch (error) {
-        console.log("ERROR in creating tokens : " , error);
-        
-    }
+    user.refreshToken = refreshToken;
 
+    await user.save({ validateBeforeSave: false });
 
+    return { accessToken, refreshToken };
+  } catch (error) {
+    console.log("ERROR in creating tokens : ", error);
+  }
 }
 
+const signUpUser = async (req, res) => {
+  try {
+    const { password, userName, emailId, channelName } = req.body;
 
- const signUpUser =  async (req, res) => {
-try {
-   
+    ValidateSignUpData(req);
 
-    const { password,userName , emailId , channelName} = req.body;
-
-       ValidateSignUpData(req);
-   
-    
-   const existingUser = await User.findOne({
-        emailId: emailId
+    const existingUser = await User.findOne({
+      emailId: emailId,
     });
     if (existingUser) {
-        return res.status(400).json({message :"User already created" })
+      return res.status(400).json({ message: "User already created" });
     }
 
-   const existingChannel = await User.findOne({
-        channelName: channelName
+    const existingChannel = await User.findOne({
+      channelName: channelName,
     });
     if (existingChannel) {
-        return res.status(400).json({message :"Channel Name already exists " })
+      return res.status(400).json({ message: "Channel Name already exists " });
     }
-    
-    
- const hashedPassword  =  await bcrypt.hash(password , 11)
 
+    const hashedPassword = await bcrypt.hash(password, 11);
 
-const user  = new User({
+    const user = new User({
       userName,
       emailId,
       channelName,
-      password: hashedPassword
-  });
+      password: hashedPassword,
+    });
 
-  await user.save();
+    await user.save();
 
-  const createdUser = await User.findOne({emailId: emailId});
+    const createdUser = await User.findOne({ emailId: emailId });
 
-  if (!createdUser) {
-    return res.status(404).jsom({message:"somehting went wrong please try again hii"})
-  }
+    if (!createdUser) {
+      return res
+        .status(404)
+        .jsom({ message: "somehting went wrong please try again hii" });
+    }
 
-  const {accessToken , refreshToken} = await createAccessTokenAndRefreshToken(createdUser?._id);
-        
+    const { accessToken, refreshToken } =
+      await createAccessTokenAndRefreshToken(createdUser?._id);
 
-  let userWithoutPassword = createdUser.toObject();
-  delete userWithoutPassword.password;
+    let userWithoutPassword = createdUser.toObject();
+    delete userWithoutPassword.password;
 
-  return res
-  .status(201)
-  .cookie("accessToken" , accessToken , accessTokenOptions)
-  .cookie("refreshToken" , refreshToken ,refreshTokenOptions)
-  .json({message: "user signup successful !!!",
-      data: userWithoutPassword
-  })
-
-
-} catch (error) {
+    return res
+      .status(201)
+      .cookie("accessToken", accessToken, accessTokenOptions)
+      .cookie("refreshToken", refreshToken, refreshTokenOptions)
+      .json({
+        message: "user signup successful !!!",
+        data: userWithoutPassword,
+      });
+  } catch (error) {
     console.log(error);
-    
-       return res.status(500)
-       .json({
-         message : "Sign Up Error Please try again hiierror ",
-         data : error.message
-       })
-}
-}
+
+    return res.status(500).json({
+      message: "Sign Up Error Please try again hiierror ",
+      data: error.message,
+    });
+  }
+};
 
 const logInUser = async (req, res) => {
-    try {
-        const {emailId , password} = req.body;
+  try {
+    const { emailId, password } = req.body;
 
-        ValidateLogInData(req);
+    ValidateLogInData(req);
 
-       const user = await User.findOne({emailId: emailId});
+    const user = await User.findOne({ emailId: emailId });
 
-       if (!user) {
-        return res.status(404).json({message: "User doen't exist"});
-       };
-
-     const isPasswordValid = await user.getPasswordValid(password);
-
-     if (!isPasswordValid) {
-        return res.status(401).json({message: "Invalid credentials"})
-     }
-
-        const {accessToken , refreshToken} = await createAccessTokenAndRefreshToken(user._id);
-        
-
-        let userWithoutPassword = user.toObject();
-        delete userWithoutPassword.password;
-
-        return res
-        .status(200)
-        .cookie("accessToken" , accessToken , accessTokenOptions)
-        .cookie("refreshToken" , refreshToken ,refreshTokenOptions)
-        .json({message: "login successful !!!",
-            data: userWithoutPassword
-        })
-       
-    } catch (error) {
-console.log(error);
-
-        return res.status(500)
-                  .json({
-                     message :"An unexpected error occurred. Please try again.",
-                    error
-                    });        
+    if (!user) {
+      return res.status(404).json({ message: "User doen't exist" });
     }
-}
+
+    const isPasswordValid = await user.getPasswordValid(password);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const { accessToken, refreshToken } =
+      await createAccessTokenAndRefreshToken(user._id);
+
+    let userWithoutPassword = user.toObject();
+    delete userWithoutPassword.password;
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, accessTokenOptions)
+      .cookie("refreshToken", refreshToken, refreshTokenOptions)
+      .json({ message: "login successful !!!", data: userWithoutPassword });
+  } catch (error) {
+    console.log(error);
+
+    return res.status(500).json({
+      message: "An unexpected error occurred. Please try again.",
+      error,
+    });
+  }
+};
 
 const logoutUser = async (req, res) => {
-   
-    try {
-        await User.findByIdAndUpdate(
-    
-            req.user._id,
-            {
-                $unset:{               
-                    refreshToken: 1   
-                }
-            },
-            {
-                new: true              
-            }
-        )
-    
-        return res
-        .status(200)
-        .clearCookie('accessToken', {
-            httpOnly: true,
-            secure: true,      
-           sameSite: 'None',
-          })
-          .clearCookie('refreshToken', {
-            httpOnly: true,
-            secure: true,      
-           sameSite: 'None',
-          })
-          .json({ message: "User logged out backend "})
-    
-    } catch (error) {
-        return res.status(500).json({
-            message : "unexpected error accured please try again",
-             error
-        })
-    }
-   
-}
+  try {
+    await User.findByIdAndUpdate(
+      req.user._id,
+      {
+        $unset: {
+          refreshToken: 1,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+
+    return res
+      .status(200)
+      .clearCookie("accessToken", {
+        httpOnly: true,
+        secure: false,
+        sameSite: "Lax",
+      })
+      .clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: false,
+        sameSite: "Lax",
+      })
+      .json({ message: "User logged out backend " });
+  } catch (error) {
+    return res.status(500).json({
+      message: "unexpected error accured please try again",
+      error,
+    });
+  }
+};
 
 const renewAccess = async (req, res) => {
-
-    try { 
-       
-       const clientsRefreshToken = req.cookies?.refreshToken;
-            if (!clientsRefreshToken) {
-                return res.status(400).send("Please Log in again")
-               }
-        
-
-      const decodedData = jwt.verify(clientsRefreshToken , process.env.REFRESH_TOKEN_SECRET);
-             if (!decodedData) {
-                 return res.status(400).send(" Please Log in again");
-                }
-
-
-       const user = await User.findById(decodedData._id);
-         if (!user) {
-             return res.status(400).send(" Please Log in again");
-            }
-         
-       if (clientsRefreshToken !== user?.refreshToken) {
-           return res.status(401).send("Please Log in again");
-       }
-
-      const {accessToken , refreshToken} = await createAccessTokenAndRefreshToken(user._id);
-      
-       return res
-       .status(200)
-       .cookie("accessToken", accessToken , accessTokenOptions)
-       .cookie("refreshToken", refreshToken , refreshTokenOptions)      
-       .send("access token renewed")
-    } catch (error) {
-        console.log("ERROR in renewToken: " , error);
-        res.status(500).json({
-            message: "something went wrong please try again",
-            error
-        })
+  try {
+    const clientsRefreshToken = req.cookies?.refreshToken;
+    if (!clientsRefreshToken) {
+      return res.status(400).send("Please Log in again");
     }
-}
 
-const getProfile = async(req, res) => {
-   const user = req.user;
-   try {
+    const decodedData = jwt.verify(
+      clientsRefreshToken,
+      process.env.REFRESH_TOKEN_SECRET
+    );
+    if (!decodedData) {
+      return res.status(400).send(" Please Log in again");
+    }
 
-   if (!user) {
-    return res.status(401).json({message: "b Login first get profile"})
-   }
+    const user = await User.findById(decodedData._id);
+    if (!user) {
+      return res.status(400).send(" Please Log in again");
+    }
 
-  
+    if (clientsRefreshToken !== user?.refreshToken) {
+      return res.status(401).send("Please Log in again");
+    }
+
+    const { accessToken, refreshToken } =
+      await createAccessTokenAndRefreshToken(user._id);
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, accessTokenOptions)
+      .cookie("refreshToken", refreshToken, refreshTokenOptions)
+      .send("access token renewed");
+  } catch (error) {
+    console.log("ERROR in renewToken: ", error);
+    res.status(500).json({
+      message: "something went wrong please try again",
+      error,
+    });
+  }
+};
+
+const getProfile = async (req, res) => {
+  const user = req.user;
+  try {
+    if (!user) {
+      return res.status(401).json({ message: "b Login first get profile" });
+    }
+
     const profile = user.toObject();
- 
-    const removeKeys = ["refreshToken", "password" ];
- 
-    removeKeys.forEach(key => {
-     delete profile[key];
-    })
- 
+
+    const removeKeys = ["refreshToken", "password"];
+
+    removeKeys.forEach((key) => {
+      delete profile[key];
+    });
+
     res.status(200).json({
-     message: "User Profile",
-     data: profile
-    })
-   } catch (error) {
+      message: "User Profile",
+      data: profile,
+    });
+  } catch (error) {
     return res.status(500).json({
-        message: " something went wront please try again ",
-         error
-        })
-   }
-   
-}
+      message: " something went wront please try again ",
+      error,
+    });
+  }
+};
 
 const updatePassword = async (req, res) => {
-    try {
-        const user = req.user;        
+  try {
+    const user = req.user;
 
-        if (!user) {
-            return res.status(401).send("Login First!!!")
-        }
-    
-        const { oldPassword , newPassword} = req.body;
-    
-       const isPasswordValid = await user.getPasswordValid(oldPassword);
-    
+    if (!user) {
+      return res.status(401).send("Login First!!!");
+    }
+
+    const { oldPassword, newPassword } = req.body;
+
+    const isPasswordValid = await user.getPasswordValid(oldPassword);
+
     if (!isPasswordValid) {
-       return res.status(401).send("Invalid Credentials");
+      return res.status(401).send("Invalid Credentials");
     }
-    
+
     const validatePassword = (password) => {
-        return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password);
+      return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(
+        password
+      );
     };
-    
-     if(!validatePassword(newPassword)){
-        return res.status(400).send("Enter strong new Password")
-     }
-    
-     const hashedPassword  =  await bcrypt.hash(newPassword , 11)
-       
-     user.password = hashedPassword;
-    
-     await user.save({validateBeforeSave: false});
-    
-     return res.status(200).send("password changed successfully")
-    } catch (error) {
-      
-       return req.status(500).json({
-        message: "something went wrong ",
-         error
-    })
+
+    if (!validatePassword(newPassword)) {
+      return res.status(400).send("Enter strong new Password");
     }
 
-} 
+    const hashedPassword = await bcrypt.hash(newPassword, 11);
 
-const updateAvatarImage =   async (req, res) => {
+    user.password = hashedPassword;
 
-   try {
+    await user.save({ validateBeforeSave: false });
 
+    return res.status(200).send("password changed successfully");
+  } catch (error) {
+    return req.status(500).json({
+      message: "something went wrong ",
+      error,
+    });
+  }
+};
+
+const updateAvatarImage = async (req, res) => {
+  try {
     const user = req.user;
 
     if (!user) {
-        return res.status(401).send("Log In first")
+      return res.status(401).send("Log In first");
     }
 
-     const avatarPath = req.file?.path;
+    const avatarPath = req.file?.path;
 
-
-     if (!avatarPath) {
-        res.status(400).send("Avatar file is missing")
-     }
-
-   const result = await cloudinaryUpload(avatarPath);
-
-   if (!result) {
-    return res.status(500).send("Something went wrong while updating avatar Please try again")
-   }
-
-   if (user.avatarImage?.public_id) {
-    await cloudinary.uploader.destroy(user.avatarImage.public_id)
-   }
-   
- const UpdatedUser = await User.findByIdAndUpdate({_id: user._id}, 
-    {
-        $set: {
-            avatarImage: {
-                url:result?.url || result?.secure_url,
-                public_id: result.public_id
-            } }
-    },
-    {new: true}
-  ).select("-password")
-   
-   res.status(200).json({message: "success",
-    UpdatedUser
-   })
-
-    
-   } catch (error) {
-    return res.status(500).json({ 
-        message: "ERROR avatar update : " ,
-         error
-   })
-   }
-}
-
-const updateCoverImage =  async (req, res) => {
-
-   try {
-
-    const user = req.user;
-
-    if (!user) {
-        return res.status(401).send("Log In first")
+    if (!avatarPath) {
+      res.status(400).send("Avatar file is missing");
     }
 
-     const coverImagePath = req.file?.path;
+    const result = await cloudinaryUpload(avatarPath);
 
+    if (!result) {
+      return res
+        .status(500)
+        .send("Something went wrong while updating avatar Please try again");
+    }
 
-     if (!coverImagePath) {
-        res.status(400).send("Cover Image file is missing")
-     }
+    if (user.avatarImage?.public_id) {
+      await cloudinary.uploader.destroy(user.avatarImage.public_id);
+    }
 
-   const result = await cloudinaryUpload(coverImagePath);
-
-   if (!result) {
-    return res.status(500).send("something went wrong while updating cover image")
-   }
-
-   if (user.coverImage?.public_id) {
-      await cloudinary.uploader.destroy(user.coverImage.public_id);
-   }
-
- const UpdatedUser = await User.findByIdAndUpdate({_id: user._id}, 
-    {
+    const UpdatedUser = await User.findByIdAndUpdate(
+      { _id: user._id },
+      {
         $set: {
-            coverImage:{
-                url:result.url || result?.secure_url,
-                public_id: result.public_id
-            } }
-    },
-    {new: true}
-  ).select("-password")
-   
-   res.status(200).json({
-    message: "success",
-    UpdatedUser
-   })
+          avatarImage: {
+            url: result?.url || result?.secure_url,
+            public_id: result.public_id,
+          },
+        },
+      },
+      { new: true }
+    ).select("-password");
 
-    
-   } catch (error) {
+    res.status(200).json({ message: "success", UpdatedUser });
+  } catch (error) {
     return res.status(500).json({
-        message: "ERROR coverImage update : " ,
-         error
-        })
-    
-   }
-}
+      message: "ERROR avatar update : ",
+      error,
+    });
+  }
+};
 
+const updateCoverImage = async (req, res) => {
+  try {
+    const user = req.user;
 
-const getChannel = async(req, res) => {
-    const {channelId} = req.params
-
-    if (!channelId) {
-       return res.status(400).send("channelid is missing")
+    if (!user) {
+      return res.status(401).send("Log In first");
     }
 
-try {
-    
-        const channel = await User.aggregate([
-            {
-                $match: {
-                    _id: new mongoose.Types.ObjectId(channelId)
-                }
+    const coverImagePath = req.file?.path;
+
+    if (!coverImagePath) {
+      res.status(400).send("Cover Image file is missing");
+    }
+
+    const result = await cloudinaryUpload(coverImagePath);
+
+    if (!result) {
+      return res
+        .status(500)
+        .send("something went wrong while updating cover image");
+    }
+
+    if (user.coverImage?.public_id) {
+      await cloudinary.uploader.destroy(user.coverImage.public_id);
+    }
+
+    const UpdatedUser = await User.findByIdAndUpdate(
+      { _id: user._id },
+      {
+        $set: {
+          coverImage: {
+            url: result.url || result?.secure_url,
+            public_id: result.public_id,
+          },
+        },
+      },
+      { new: true }
+    ).select("-password");
+
+    res.status(200).json({
+      message: "success",
+      UpdatedUser,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "ERROR coverImage update : ",
+      error,
+    });
+  }
+};
+
+const getChannel = async (req, res) => {
+  const { channelId } = req.params;
+
+  if (!channelId) {
+    return res.status(400).send("channelid is missing");
+  }
+
+  try {
+    const channel = await User.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(channelId),
+        },
+      },
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "channel",
+          as: "subscribers",
+        },
+      },
+      {
+        $lookup: {
+          from: "subscriptions",
+          localField: "_id",
+          foreignField: "subscriber",
+          as: "subscribedTo",
+        },
+      },
+      {
+        $addFields: {
+          subscribersCount: {
+            $size: "$subscribers",
+          },
+          SubscribedToCount: {
+            $size: "$subscribedTo",
+          },
+          isSubscribed: {
+            $cond: {
+              if: { $in: [req.user?._id, "$subscribers.subscriber"] },
+              then: true,
+              else: false,
             },
-            {
-                $lookup: {
-                    from: "subscriptions",
-                    localField: "_id",
-                    foreignField: "channel",
-                    as: "subscribers"
-                }
-            },
-            {
-                $lookup: {
-                    from: "subscriptions",
-                    localField: "_id",
-                    foreignField: "subscriber",
-                    as: "subscribedTo"
-                }
-            },
-            {
-                $addFields: {
-                    subscribersCount: {
-                        $size: "$subscribers"
-                    },
-                    SubscribedToCount: {
-                        $size: "$subscribedTo"
-                    },
-                    isSubscribed: {
-                        $cond: {
-                            if: {$in: [req.user?._id, "$subscribers.subscriber"]},
-                            then: true,
-                            else: false
-                        }
-                    }
-                }
-            },
-            {
-                $project: {
-                    channelName: 1,
-                    userName: 1,
-                    subscribersCount: 1,
-                    SubscribedToCount: 1,
-                    isSubscribed: 1,
-                    avatarImage: 1,
-                    coverImage: 1
-                }
-            }
-        ])
+          },
+        },
+      },
+      {
+        $project: {
+          channelName: 1,
+          userName: 1,
+          subscribersCount: 1,
+          SubscribedToCount: 1,
+          isSubscribed: 1,
+          avatarImage: 1,
+          coverImage: 1,
+        },
+      },
+    ]);
 
-    
-    
-        if (!channel?.length) {
-            return res.status(204).send("channel has no data")
-        }
+    if (!channel?.length) {
+      return res.status(204).send("channel has no data");
+    }
 
-        
-        return res
-        .status(200)
-        .json({
-            message:  " success",
-            data: channel[0]
-        })
-} catch (error) {
-    return res.status(500).send("server error getChannel")
-}
-    
-}
+    return res.status(200).json({
+      message: " success",
+      data: channel[0],
+    });
+  } catch (error) {
+    return res.status(500).send("server error getChannel");
+  }
+};
 
-
-
-
-
-module.exports={signUpUser, logInUser,logoutUser,renewAccess, getProfile , updatePassword, updateAvatarImage, updateCoverImage, getChannel };
+module.exports = {
+  signUpUser,
+  logInUser,
+  logoutUser,
+  renewAccess,
+  getProfile,
+  updatePassword,
+  updateAvatarImage,
+  updateCoverImage,
+  getChannel,
+};
