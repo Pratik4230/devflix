@@ -13,15 +13,15 @@ const cloudinary = require("cloudinary").v2;
 
 const accessTokenOptions = {
   httpOnly: true,
-  secure: false,
-  sameSite: "Lax",
+  secure: true,
+  sameSite: "None",
   maxAge: 60 * 60 * 24 * 30,
 };
 
 const refreshTokenOptions = {
   httpOnly: true,
-  secure: false,
-  sameSite: "Lax",
+  secure: true,
+  sameSite: "None",
   maxAge: 60 * 60 * 24 * 60,
 };
 
@@ -162,13 +162,13 @@ const logoutUser = async (req, res) => {
       .status(200)
       .clearCookie("accessToken", {
         httpOnly: true,
-        secure: false,
-        sameSite: "Lax",
+        secure: true,
+        sameSite: "None",
       })
       .clearCookie("refreshToken", {
         httpOnly: true,
-        secure: false,
-        sameSite: "Lax",
+        secure: true,
+        sameSite: "None",
       })
       .json({ message: "User logged out backend " });
   } catch (error) {
